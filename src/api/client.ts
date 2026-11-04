@@ -23,15 +23,8 @@ export class ApiError extends Error {
   }
 }
 
-function readApiUrl(): string {
-  const url = import.meta.env.VITE_API_URL;
-  if (url === undefined || url === "") {
-    throw new Error("VITE_API_URL is not set: copy .env.example to .env");
-  }
-  return url;
-}
-
-export const apiUrl = readApiUrl();
+// Checked by vite.config.ts before the dev server or the build starts.
+export const apiUrl = import.meta.env.VITE_API_URL;
 
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 

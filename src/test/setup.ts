@@ -2,7 +2,8 @@ import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
 // The API client reads this when it is first imported, which happens after
-// this file runs. Requests never leave the test: `mockApi` replaces `fetch`.
+// this file runs; vite.config.ts skips its own check in test mode. Requests
+// never leave the test: `mockApi` replaces `fetch`.
 vi.stubEnv("VITE_API_URL", "http://api.test");
 
 afterEach(() => {

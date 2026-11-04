@@ -23,8 +23,9 @@ Then open <http://localhost:5173> and sign in as one of the two admins that
 the API's `SEED_ADMIN_PASSWORD`).
 
 Configuration comes from `.env` (see `.env.example`): `VITE_API_URL`, the
-API's origin, `http://localhost:3000` by default. Vite inlines `VITE_*`
-variables into the built files, so they are public: never put a secret there.
+API's origin, `http://localhost:3000` by default. Without it, `npm run dev`
+and `npm run build` stop with a message. Vite inlines `VITE_*` variables into
+the built files, so they are public: never put a secret there.
 The session is an `HttpOnly` cookie set by the API, so every request to it is
 sent with credentials.
 
