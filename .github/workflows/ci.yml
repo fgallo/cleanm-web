@@ -23,3 +23,8 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+        # The build inlines the API origin and refuses to run without one.
+        # Here it only proves the build works, so any origin will do; the
+        # deploy sets the real one.
+        env:
+          VITE_API_URL: http://localhost:3000
