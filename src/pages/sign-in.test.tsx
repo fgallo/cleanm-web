@@ -59,7 +59,8 @@ test("shows a message when the API cannot be reached", async () => {
   fillAndSubmit("ana@example.com", "correct horse battery staple");
 
   const alert = await screen.findByRole("alert");
-  expect(alert.textContent).toBe(
-    "Could not reach the API. Check that it is running and try again.",
+  expect(alert.textContent).toContain(
+    "Could not reach the API at http://api.test",
   );
+  expect(alert.textContent).toContain("WEB_ORIGINS");
 });

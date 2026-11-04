@@ -26,6 +26,19 @@ export class ApiError extends Error {
 // Checked by vite.config.ts before the dev server or the build starts.
 export const apiUrl = import.meta.env.VITE_API_URL;
 
+// For a request that failed: the API's own message when it answered, or
+// what to check when it did not. "Did not answer" covers the API being down
+// and its CORS settings not allowing this origin: the browser reports both
+// as a TypeError.
+export function describeFailure(error: Error): string {
+  if (error instanceof ApiError) {
+    return error.issues.length > 0
+      ? error.issues.map((issue) => issue.message).join(". ")
+      : error.message;
+  }
+  return `Could not reach the API at ${apiUrl}. Check that it is running and that its WEB_ORIGINS includes ${window.location.origin}.`;
+}
+
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export async function request<T>(

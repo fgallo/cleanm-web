@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Navigate, Outlet, useLocation } from "react-router";
 
 import { sessionQueryOptions } from "@/api/auth.ts";
+import { describeFailure } from "@/api/client.ts";
 import { SessionContext } from "@/auth/session-context.ts";
 import { Button } from "@/components/ui/button";
 
@@ -18,7 +19,7 @@ export default function RequireSession() {
   if (session.isError) {
     return (
       <div className="flex flex-col items-start gap-3 p-6">
-        <p role="alert">Could not reach the API: {session.error.message}</p>
+        <p role="alert">{describeFailure(session.error)}</p>
         <Button variant="outline" onClick={() => void session.refetch()}>
           Try again
         </Button>

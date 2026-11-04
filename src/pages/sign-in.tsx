@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { sessionQueryOptions, signIn } from "@/api/auth.ts";
-import { ApiError } from "@/api/client.ts";
+import { describeFailure } from "@/api/client.ts";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -79,7 +79,7 @@ export default function SignInPage() {
                 />
               </Field>
               {signInMutation.isError && (
-                <FieldError>{describe(signInMutation.error)}</FieldError>
+                <FieldError>{describeFailure(signInMutation.error)}</FieldError>
               )}
               <Button type="submit" disabled={signInMutation.isPending}>
                 Sign in
@@ -103,15 +103,4 @@ function redirectTarget(state: unknown): string {
     return state.from;
   }
   return "/";
-}
-
-// What the person can act on: the API's own message for a refused sign-in,
-// one line for a connection that failed.
-function describe(error: Error): string {
-  if (error instanceof ApiError) {
-    return error.issues.length > 0
-      ? error.issues.map((issue) => issue.message).join(". ")
-      : error.message;
-  }
-  return "Could not reach the API. Check that it is running and try again.";
 }
