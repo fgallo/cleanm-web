@@ -16,6 +16,9 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    // `@/` points at `src/`; the same alias is set for Vite in vite.config.ts.
+    // shadcn components import each other through it.
+    "paths": { "@/*": ["./src/*"] },
 
     /* Strictness, the same as the API */
     "strict": true,
