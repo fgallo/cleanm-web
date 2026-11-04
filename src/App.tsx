@@ -1,7 +1,21 @@
+import { Route, Routes } from "react-router";
+
+import RequireSession from "@/auth/require-session.tsx";
+import AppShell from "@/components/app-shell.tsx";
+import HomePage from "@/pages/home.tsx";
+import SignInPage from "@/pages/sign-in.tsx";
+
+// Every route of the client. `/sign-in` is the only public one; the rest
+// render inside the shell, for a signed-in user.
 export default function App() {
   return (
-    <main>
-      <h1>CleanM</h1>
-    </main>
+    <Routes>
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route element={<RequireSession />}>
+        <Route element={<AppShell />}>
+          <Route index element={<HomePage />} />
+        </Route>
+      </Route>
+    </Routes>
   );
 }
