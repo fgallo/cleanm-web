@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, Outlet, useNavigate } from "react-router";
+import { cn } from "cn";
+import { Link, NavLink, Outlet, useNavigate } from "react-router";
 
 import { signOut } from "@/api/auth.ts";
 import { useSession } from "@/auth/session-context.ts";
 import { Button } from "@/components/ui/button";
 
-// The frame around every signed-in page: a header with the organization,
-// the user and sign-out. The page itself renders in the outlet.
+// The frame around every signed-in page: a header with the navigation, the
+// organization, the user and sign-out. The page itself renders in the outlet.
 export default function AppShell() {
   const { user, organization } = useSession();
   const navigate = useNavigate();
@@ -24,9 +25,16 @@ export default function AppShell() {
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b px-6 py-3">
-        <Link to="/" className="font-heading font-semibold">
-          CleanM
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link to="/" className="font-heading font-semibold">
+            CleanM
+          </Link>
+          <nav className="flex items-center gap-4 text-sm">
+            <NavLink to="/clients" className={navLinkClass}>
+              Clients
+            </NavLink>
+          </nav>
+        </div>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-muted-foreground">
             {user.name} · {organization.name}
@@ -50,5 +58,13 @@ export default function AppShell() {
         <Outlet />
       </main>
     </div>
+  );
+}
+
+// NavLink also sets aria-current="page" on the active link.
+function navLinkClass({ isActive }: { isActive: boolean }): string {
+  return cn(
+    "text-muted-foreground hover:text-foreground",
+    isActive && "font-medium text-foreground",
   );
 }
