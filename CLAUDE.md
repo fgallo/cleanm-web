@@ -31,8 +31,11 @@ cookie, so every request to the API is sent with credentials. API conventions
 
 - `src/api/`: the only place that calls the API. `client.ts` (JSON, credentials,
   `ApiError` in the API's error shape) and one module per resource with its
-  request functions and `queryOptions` (`auth.ts`). Components get data through
-  TanStack Query hooks, never through `fetch`.
+  request functions, a query key factory (`clientKeys` in `clients.ts`) and
+  `queryOptions`. Components get data through TanStack Query hooks, never
+  through `fetch`.
+- `src/components/request-failed.tsx`: what a page shows in place of data it
+  could not load, with the retry button; pages render it in their error state.
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
