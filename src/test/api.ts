@@ -28,6 +28,20 @@ export function mockApi(
   return requests;
 }
 
+// Answers each request from a table keyed by "METHOD /path". A request the
+// table does not cover fails, so nothing is called by accident.
+export function routes(
+  table: Record<string, (request: ApiRequest) => Response | Promise<Response>>,
+): (request: ApiRequest) => Response | Promise<Response> {
+  return (request) => {
+    const answer = table[`${request.method} ${request.path}`];
+    if (answer === undefined) {
+      throw new Error(`No mocked answer for ${request.method} ${request.path}`);
+    }
+    return answer(request);
+  };
+}
+
 export function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,
