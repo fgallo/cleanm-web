@@ -17,9 +17,19 @@ export type Client = {
 export const clientKeys = {
   all: ["clients"] as const,
   list: () => [...clientKeys.all, "list"] as const,
+  // Everything about one client hangs under this key: the client itself and
+  // its properties (src/api/properties.ts).
+  detail: (id: string) => [...clientKeys.all, "detail", id] as const,
 };
 
 export const clientListQueryOptions = queryOptions({
   queryKey: clientKeys.list(),
   queryFn: () => get<Client[]>("/clients"),
 });
+
+export function clientQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: clientKeys.detail(id),
+    queryFn: () => get<Client>(`/clients/${id}`),
+  });
+}
