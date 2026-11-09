@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 
 import { clientListQueryOptions } from "@/api/clients.ts";
 import RequestFailed from "@/components/request-failed.tsx";
@@ -39,7 +40,14 @@ export default function ClientsPage() {
             <TableBody>
               {clients.data.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/clients/${client.id}`}
+                      className="hover:underline"
+                    >
+                      {client.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{client.email ?? <Missing />}</TableCell>
                   <TableCell>{client.phone ?? <Missing />}</TableCell>
                 </TableRow>
