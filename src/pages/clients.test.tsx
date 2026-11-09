@@ -2,7 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
 
 import { json, mockApi, networkFailure, routes } from "@/test/api.ts";
-import { clients, session } from "@/test/fixtures.ts";
+import { alice, aliceProperties, clients, session } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
 
 test("lists the clients with a dash where a field is empty", async () => {
@@ -53,4 +53,23 @@ test("offers to try again when the list cannot be loaded", async () => {
   expect(
     await screen.findByRole("cell", { name: "Alice Example" }),
   ).toBeDefined();
+});
+
+test("links each client to its page", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /clients": () => json(200, clients),
+      [`GET /clients/${alice.id}`]: () => json(200, alice),
+      [`GET /clients/${alice.id}/properties`]: () => json(200, aliceProperties),
+    }),
+  );
+  renderApp({ route: "/clients" });
+
+  fireEvent.click(await screen.findByRole("link", { name: "Alice Example" }));
+
+  expect(
+    await screen.findByRole("heading", { name: "Alice Example" }),
+  ).toBeDefined();
+  expect(await screen.findByText("456 Sample Ave")).toBeDefined();
 });
