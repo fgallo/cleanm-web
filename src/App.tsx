@@ -2,6 +2,8 @@ import { Route, Routes } from "react-router";
 
 import RequireSession from "@/auth/require-session.tsx";
 import AppShell from "@/components/app-shell.tsx";
+import ClientEditPage from "@/pages/client-edit.tsx";
+import ClientNewPage from "@/pages/client-new.tsx";
 import ClientPage from "@/pages/client.tsx";
 import ClientsPage from "@/pages/clients.tsx";
 import HomePage from "@/pages/home.tsx";
@@ -17,7 +19,9 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
           <Route path="clients" element={<ClientsPage />} />
+          <Route path="clients/new" element={<ClientNewPage />} />
           <Route path="clients/:clientId" element={<ClientPage />} />
+          <Route path="clients/:clientId/edit" element={<ClientEditPage />} />
         </Route>
       </Route>
     </Routes>

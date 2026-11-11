@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import { clientListQueryOptions } from "@/api/clients.ts";
 import RequestFailed from "@/components/request-failed.tsx";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,7 +18,12 @@ export default function ClientsPage() {
 
   return (
     <>
-      <h1 className="mb-4 font-heading text-xl font-semibold">Clients</h1>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="font-heading text-xl font-semibold">Clients</h1>
+        <Link to="/clients/new" className={buttonVariants()}>
+          New client
+        </Link>
+      </div>
       {clients.isPending && <p className="text-muted-foreground">Loading…</p>}
       {clients.isError && (
         <RequestFailed
