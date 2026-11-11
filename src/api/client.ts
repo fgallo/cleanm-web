@@ -53,6 +53,22 @@ export function issuesFor(error: Error | null, field: string): Issue[] {
     : [];
 }
 
+// What a form says below its fields: a failure that is not about them (the
+// API is down, the record was deleted meanwhile), or the issues that name
+// none of `fields`. `null` when every issue has its field.
+export function describeOutsideFields(
+  error: Error,
+  fields: readonly string[],
+): string | null {
+  if (!(error instanceof ApiError) || error.issues.length === 0) {
+    return describeFailure(error);
+  }
+  const others = error.issues.filter((issue) => !fields.includes(issue.path));
+  return others.length === 0
+    ? null
+    : others.map((issue) => issue.message).join(". ");
+}
+
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export async function request<T>(

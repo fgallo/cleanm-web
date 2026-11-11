@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 
-import { ApiError, describeFailure, issuesFor } from "@/api/client.ts";
+import { describeOutsideFields, issuesFor } from "@/api/client.ts";
 import type { Client, ClientInput } from "@/api/clients.ts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { emptyAsNull } from "@/lib/form.ts";
 
 const fields = ["name", "email", "phone"] as const;
 
@@ -44,7 +45,8 @@ export default function ClientForm({
   const nameIssues = issuesFor(error, "name");
   const emailIssues = issuesFor(error, "email");
   const phoneIssues = issuesFor(error, "phone");
-  const formMessage = error === null ? null : describeOutsideFields(error);
+  const formMessage =
+    error === null ? null : describeOutsideFields(error, fields);
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md">
@@ -100,26 +102,4 @@ export default function ClientForm({
       </FieldGroup>
     </form>
   );
-}
-
-// An optional field left blank is sent as `null`: the API takes no empty
-// string for email or phone.
-function emptyAsNull(value: string): string | null {
-  const trimmed = value.trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-// What the form says below its fields: a failure that is not about them
-// (the API is down, the client was deleted meanwhile), or the issues that
-// name no field of this form. `null` when every issue has its field.
-function describeOutsideFields(error: Error): string | null {
-  if (!(error instanceof ApiError) || error.issues.length === 0) {
-    return describeFailure(error);
-  }
-  const others = error.issues.filter(
-    (issue) => !(fields as readonly string[]).includes(issue.path),
-  );
-  return others.length === 0
-    ? null
-    : others.map((issue) => issue.message).join(". ");
 }
