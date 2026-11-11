@@ -39,6 +39,20 @@ export function describeFailure(error: Error): string {
   return `Could not reach the API at ${apiUrl}. Check that it is running and that its WEB_ORIGINS includes ${window.location.origin}.`;
 }
 
+// A 404 is an answer about the record, not a failed request: pages say that
+// the record does not exist instead of offering to try again.
+export function isNotFound(error: Error): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
+// The messages a validation error has for one field of a form. The API
+// names the field in `path` ("email"; brief, section 5).
+export function issuesFor(error: Error | null, field: string): Issue[] {
+  return error instanceof ApiError
+    ? error.issues.filter((issue) => issue.path === field)
+    : [];
+}
+
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
 export async function request<T>(
@@ -74,6 +88,10 @@ export function get<T>(path: string): Promise<T> {
 
 export function post<T>(path: string, body?: unknown): Promise<T> {
   return request<T>("POST", path, body);
+}
+
+export function patch<T>(path: string, body: unknown): Promise<T> {
+  return request<T>("PATCH", path, body);
 }
 
 type ErrorBody = {
