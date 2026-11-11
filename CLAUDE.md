@@ -36,6 +36,11 @@ cookie, so every request to the API is sent with credentials. API conventions
   through `fetch`.
 - `src/components/request-failed.tsx`: what a page shows in place of data it
   could not load, with the retry button; pages render it in their error state.
+- Forms keep plain controlled state, with no form library and no validation
+  of their own beyond HTML attributes: the page owns the mutation and passes
+  its error to the form (`src/components/client-form.tsx`), which shows each
+  of the API's `issues` under the field its `path` names (`issuesFor` in
+  `src/api/client.ts`) and any other failure below the fields.
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
