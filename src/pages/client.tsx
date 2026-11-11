@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 
-import { ApiError } from "@/api/client.ts";
+import { isNotFound } from "@/api/client.ts";
 import { clientQueryOptions, type Client } from "@/api/clients.ts";
 import {
   clientPropertiesQueryOptions,
   type Property,
 } from "@/api/properties.ts";
 import RequestFailed from "@/components/request-failed.tsx";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function ClientPage() {
@@ -75,18 +76,22 @@ function ClientDetails({ clientId }: { clientId: string }) {
   );
 }
 
-function isNotFound(error: Error): boolean {
-  return error instanceof ApiError && error.status === 404;
-}
-
 function ClientHeader({ client }: { client: Client }) {
   return (
-    <>
-      <h1 className="font-heading text-xl font-semibold">{client.name}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {client.email ?? "No email"} · {client.phone ?? "No phone"}
-      </p>
-    </>
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h1 className="font-heading text-xl font-semibold">{client.name}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {client.email ?? "No email"} · {client.phone ?? "No phone"}
+        </p>
+      </div>
+      <Link
+        to={`/clients/${client.id}/edit`}
+        className={buttonVariants({ variant: "outline" })}
+      >
+        Edit
+      </Link>
+    </div>
   );
 }
 
