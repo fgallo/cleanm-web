@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { get } from "./client.ts";
+import { get, patch, post } from "./client.ts";
 
 // The shape GET /clients returns. Dates travel as ISO strings.
 export type Client = {
@@ -10,6 +10,14 @@ export type Client = {
   phone: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+// What POST /clients and PATCH /clients/:id take. `null` leaves the field
+// empty on create and clears it on update.
+export type ClientInput = {
+  name: string;
+  email: string | null;
+  phone: string | null;
 };
 
 // Every query about clients starts with `all`, so that invalidating it after
@@ -32,4 +40,12 @@ export function clientQueryOptions(id: string) {
     queryKey: clientKeys.detail(id),
     queryFn: () => get<Client>(`/clients/${id}`),
   });
+}
+
+export function createClient(input: ClientInput): Promise<Client> {
+  return post<Client>("/clients", input);
+}
+
+export function updateClient(id: string, input: ClientInput): Promise<Client> {
+  return patch<Client>(`/clients/${id}`, input);
 }

@@ -61,6 +61,15 @@ export function apiError(
   return json(status, { error: { code, message } });
 }
 
+// The 400 the API answers when a body fails validation, one issue per field.
+export function validationError(
+  issues: { path: string; message: string }[],
+): Response {
+  return json(400, {
+    error: { code: "validation_error", message: "Invalid request", issues },
+  });
+}
+
 export function networkFailure(): Promise<Response> {
   return Promise.reject(new TypeError("Failed to fetch"));
 }
