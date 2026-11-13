@@ -7,6 +7,8 @@ import ClientNewPage from "@/pages/client-new.tsx";
 import ClientPage from "@/pages/client.tsx";
 import ClientsPage from "@/pages/clients.tsx";
 import HomePage from "@/pages/home.tsx";
+import PropertyEditPage from "@/pages/property-edit.tsx";
+import PropertyNewPage from "@/pages/property-new.tsx";
 import SignInPage from "@/pages/sign-in.tsx";
 
 // Every route of the client. `/sign-in` is the only public one; the rest
@@ -22,6 +24,14 @@ export default function App() {
           <Route path="clients/new" element={<ClientNewPage />} />
           <Route path="clients/:clientId" element={<ClientPage />} />
           <Route path="clients/:clientId/edit" element={<ClientEditPage />} />
+          <Route
+            path="clients/:clientId/properties/new"
+            element={<PropertyNewPage />}
+          />
+          <Route
+            path="properties/:propertyId/edit"
+            element={<PropertyEditPage />}
+          />
         </Route>
       </Route>
     </Routes>
