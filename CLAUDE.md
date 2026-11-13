@@ -43,6 +43,12 @@ cookie, so every request to the API is sent with credentials. API conventions
   `src/api/client.ts`) and any other failure below the fields
   (`describeOutsideFields`). A field left blank is sent as `null`
   (`emptyAsNull` in `src/lib/form.ts`).
+- `src/components/job-calendar.tsx`: the only module that imports
+  FullCalendar. It takes jobs and reports the days on screen; the page
+  (`src/pages/calendar.tsx`) asks the API for that range. Its colors are the
+  shadcn tokens, mapped in `job-calendar.css` in place of the theme's palette.
+  Date arithmetic uses `Temporal` from `temporal-polyfill` (`PlainDate`,
+  `PlainDateTime`): a job's date and time have no time zone.
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
