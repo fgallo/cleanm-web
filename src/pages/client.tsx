@@ -46,9 +46,15 @@ function ClientDetails({ clientId }: { clientId: string }) {
       {client.isSuccess && (
         <>
           <ClientHeader client={client.data} />
-          <h2 className="mt-8 mb-3 font-heading text-lg font-medium">
-            Properties
-          </h2>
+          <div className="mt-8 mb-3 flex items-center justify-between gap-4">
+            <h2 className="font-heading text-lg font-medium">Properties</h2>
+            <Link
+              to={`/clients/${clientId}/properties/new`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Add property
+            </Link>
+          </div>
           {properties.isPending && (
             <p className="text-muted-foreground">Loading…</p>
           )}
@@ -99,11 +105,22 @@ function PropertyCard({ property }: { property: Property }) {
   return (
     <Card size="sm">
       <CardContent>
-        <address className="text-sm not-italic">
-          <div>{property.addressLine1}</div>
-          {property.addressLine2 !== null && <div>{property.addressLine2}</div>}
-          <div>{cityLine(property)}</div>
-        </address>
+        <div className="flex items-start justify-between gap-4">
+          <address className="text-sm not-italic">
+            <div>{property.addressLine1}</div>
+            {property.addressLine2 !== null && (
+              <div>{property.addressLine2}</div>
+            )}
+            <div>{cityLine(property)}</div>
+          </address>
+          <Link
+            to={`/properties/${property.id}/edit`}
+            aria-label={`Edit ${property.addressLine1}`}
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
+            Edit
+          </Link>
+        </div>
         {property.notes !== null && (
           <p className="mt-2 text-sm text-muted-foreground">{property.notes}</p>
         )}
