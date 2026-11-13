@@ -30,6 +30,9 @@ export default function AppShell() {
             CleanM
           </Link>
           <nav className="flex items-center gap-4 text-sm">
+            <NavLink to="/calendar" className={navLinkClass}>
+              Calendar
+            </NavLink>
             <NavLink to="/clients" className={navLinkClass}>
               Clients
             </NavLink>
