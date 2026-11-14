@@ -8,6 +8,9 @@ import ClientNewPage from "@/pages/client-new.tsx";
 import ClientPage from "@/pages/client.tsx";
 import ClientsPage from "@/pages/clients.tsx";
 import DayPage from "@/pages/day.tsx";
+import HelperEditPage from "@/pages/helper-edit.tsx";
+import HelperNewPage from "@/pages/helper-new.tsx";
+import HelpersPage from "@/pages/helpers.tsx";
 import HomePage from "@/pages/home.tsx";
 import JobEditPage from "@/pages/job-edit.tsx";
 import JobNewPage from "@/pages/job-new.tsx";
@@ -26,6 +29,9 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="calendar/:date" element={<DayPage />} />
+          <Route path="helpers" element={<HelpersPage />} />
+          <Route path="helpers/new" element={<HelperNewPage />} />
+          <Route path="helpers/:helperId/edit" element={<HelperEditPage />} />
           <Route path="jobs/new" element={<JobNewPage />} />
           <Route path="jobs/:jobId/edit" element={<JobEditPage />} />
           <Route path="clients" element={<ClientsPage />} />
