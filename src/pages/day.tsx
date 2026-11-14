@@ -134,9 +134,18 @@ function JobCard({ job }: { job: Job }) {
               </Link>
             </h2>
           </div>
-          <Badge variant={statusVariants[job.status]}>
-            {jobStatusLabels[job.status]}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={statusVariants[job.status]}>
+              {jobStatusLabels[job.status]}
+            </Badge>
+            <Link
+              to={`/jobs/${job.id}/edit`}
+              aria-label={`Edit job for ${job.client.name}`}
+              className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            >
+              Edit
+            </Link>
+          </div>
         </div>
         <address className="mt-2 not-italic">
           <div>{job.property.addressLine1}</div>

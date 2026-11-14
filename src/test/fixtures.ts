@@ -1,5 +1,6 @@
 import type { Session } from "@/api/auth.ts";
 import type { Client } from "@/api/clients.ts";
+import type { Helper } from "@/api/helpers.ts";
 import type { Job } from "@/api/jobs.ts";
 import type { Property } from "@/api/properties.ts";
 
@@ -68,6 +69,27 @@ export const aliceHouse: Property = {
 
 export const aliceProperties: Property[] = [aliceUnit, aliceHouse];
 
+export const carla: Helper = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d40",
+  name: "Carla Invented",
+  phone: "416-555-0140",
+  active: true,
+  createdAt: "2026-10-05T13:00:00.000Z",
+  updatedAt: "2026-10-05T13:00:00.000Z",
+};
+
+// Left the business: listed, but no longer assignable.
+export const dan: Helper = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d41",
+  name: "Dan Former",
+  phone: null,
+  active: false,
+  createdAt: "2026-10-05T13:05:00.000Z",
+  updatedAt: "2026-11-03T18:00:00.000Z",
+};
+
+export const helpers: Helper[] = [carla, dan];
+
 // Tuesday morning at Alice's unit: charged by the hour, nobody assigned,
 // not invoiced.
 export const aliceVisit: Job = {
@@ -122,10 +144,7 @@ export const bobVisit: Job = {
     notes: null,
   },
   client: { id: bob.id, name: bob.name },
-  helper: {
-    id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d40",
-    name: "Carla Invented",
-  },
+  helper: { id: carla.id, name: carla.name },
   recurringSeriesId: null,
   invoice: { id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d50", number: 12 },
   createdAt: "2026-11-02T16:00:00.000Z",
