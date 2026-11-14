@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
 
 import { describeOutsideFields, issuesFor } from "@/api/client.ts";
@@ -34,8 +34,10 @@ import {
 import { formatMoney } from "@/lib/format.ts";
 import { jobStatusLabels, serviceTypeLabels } from "@/lib/job-labels.ts";
 
-// The names the API gives these fields in its issues.
+// The names the API gives these fields in its issues. `propertyId` is the
+// field a page adds for a new job, through `children`.
 const fields = [
+  "propertyId",
   "status",
   "scheduledDate",
   "startTime",
@@ -48,53 +50,71 @@ const fields = [
 ] as const;
 
 // What can be changed on a job: when it happens, what it is, who helps and
-// what it costs. Like the other forms, the page owns the request and passes
-// what the last attempt failed with. Hours and dollars are what is typed;
-// minutes and cents are what is sent.
+// what it costs, for editing a job and for adding one (`job` absent). Like
+// the other forms, the page owns the request and passes what the last
+// attempt failed with. Hours and dollars are what is typed; minutes and
+// cents are what is sent.
 export default function JobForm({
   job,
+  defaultDate,
   helpers,
   submitLabel,
   cancelTo,
   pending,
   error,
   onSubmit,
+  children,
 }: {
-  job: Job;
+  job?: Job;
+  // The day (YYYY-MM-DD) a new job is offered on.
+  defaultDate?: string;
   helpers: Helper[];
   submitLabel: string;
   cancelTo: string;
   pending: boolean;
   error: Error | null;
   onSubmit: (input: JobInput) => void;
+  // Fields the page puts above these, inside the same form: where a new job
+  // is. The page keeps their state and adds it to what is submitted.
+  children?: ReactNode;
 }) {
-  const initial = toJobInput(job);
-  const [status, setStatus] = useState(initial.status);
-  const [scheduledDate, setScheduledDate] = useState(initial.scheduledDate);
-  const [startTime, setStartTime] = useState(initial.startTime);
-  const [hours, setHours] = useState(minutesToHours(initial.durationMinutes));
-  const [serviceType, setServiceType] = useState(initial.serviceType);
+  // A new job starts scheduled and regular, as most are. Its time, hours
+  // and rate start blank: a guess would be saved as easily as a choice.
+  const initial = job === undefined ? null : toJobInput(job);
+  const [status, setStatus] = useState(initial?.status ?? "scheduled");
+  const [scheduledDate, setScheduledDate] = useState(
+    initial?.scheduledDate ?? defaultDate ?? "",
+  );
+  const [startTime, setStartTime] = useState(initial?.startTime ?? "");
+  const [hours, setHours] = useState(
+    initial === null ? "" : minutesToHours(initial.durationMinutes),
+  );
+  const [serviceType, setServiceType] = useState(
+    initial?.serviceType ?? "regular",
+  );
   const [hourlyRate, setHourlyRate] = useState(
-    centsToDollars(initial.hourlyRateCents),
+    initial === null ? "" : centsToDollars(initial.hourlyRateCents),
   );
   const [fixedPrice, setFixedPrice] = useState(
-    initial.fixedPriceCents === null
+    initial === null || initial.fixedPriceCents === null
       ? ""
       : centsToDollars(initial.fixedPriceCents),
   );
   // An empty value is "No helper".
-  const [helperId, setHelperId] = useState(initial.helperId ?? "");
-  const [notes, setNotes] = useState(initial.notes ?? "");
+  const [helperId, setHelperId] = useState(initial?.helperId ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
 
   // Only active helpers can be assigned. The one this job already has stays
   // on offer even when inactive, so the field shows who did the job.
   const offeredHelpers = helpers.filter(
-    (helper) => helper.active || helper.id === initial.helperId,
+    (helper) => helper.active || helper.id === initial?.helperId,
   );
   // The same arithmetic as the API: rate x duration, rounded to the cent.
-  const hourlyPriceCents = Math.round(
-    (dollarsToCents(hourlyRate) * hoursToMinutes(hours)) / 60,
-  );
+  // Unknown while either is blank, as on a new job.
+  const hourlyPriceCents =
+    hours.trim() === "" || hourlyRate.trim() === ""
+      ? null
+      : Math.round((dollarsToCents(hourlyRate) * hoursToMinutes(hours)) / 60);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,6 +149,7 @@ export default function JobForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-md">
       <FieldGroup>
+        {children}
         <Field data-invalid={issues.status.length > 0}>
           <FieldLabel htmlFor="status">Status</FieldLabel>
           <NativeSelect
@@ -251,7 +272,9 @@ export default function JobForm({
               onChange={(event) => setFixedPrice(event.target.value)}
             />
             <FieldDescription id="fixedPrice-description">
-              Blank charges by the hour: {formatMoney(hourlyPriceCents)}.
+              {hourlyPriceCents === null
+                ? "Blank charges by the hour."
+                : `Blank charges by the hour: ${formatMoney(hourlyPriceCents)}.`}
             </FieldDescription>
             <FieldError errors={issues.fixedPriceCents} />
           </Field>
