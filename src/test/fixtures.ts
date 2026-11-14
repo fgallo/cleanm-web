@@ -69,6 +69,21 @@ export const aliceHouse: Property = {
 
 export const aliceProperties: Property[] = [aliceUnit, aliceHouse];
 
+// Bob's only property.
+export const bobCottage: Property = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d22",
+  clientId: bob.id,
+  addressLine1: "78 Invented St",
+  addressLine2: null,
+  city: "Toronto",
+  province: "ON",
+  postalCode: "M5V 2T6",
+  country: "CA",
+  notes: null,
+  createdAt: "2026-10-02T15:35:00.000Z",
+  updatedAt: "2026-10-02T15:35:00.000Z",
+};
+
 export const carla: Helper = {
   id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d40",
   name: "Carla Invented",
@@ -134,14 +149,14 @@ export const bobVisit: Job = {
   priceCents: 20000,
   notes: "Bring the long ladder.",
   property: {
-    id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d22",
-    addressLine1: "78 Invented St",
-    addressLine2: null,
-    city: "Toronto",
-    province: "ON",
-    postalCode: "M5V 2T6",
-    country: "CA",
-    notes: null,
+    id: bobCottage.id,
+    addressLine1: bobCottage.addressLine1,
+    addressLine2: bobCottage.addressLine2,
+    city: bobCottage.city,
+    province: bobCottage.province,
+    postalCode: bobCottage.postalCode,
+    country: bobCottage.country,
+    notes: bobCottage.notes,
   },
   client: { id: bob.id, name: bob.name },
   helper: { id: carla.id, name: carla.name },

@@ -70,6 +70,12 @@ function DayJobs({ day }: { day: Temporal.PlainDate }) {
         <h1 className="font-heading text-xl font-semibold">{formatDay(day)}</h1>
         <div className="flex gap-2">
           <Link
+            to={`/jobs/new?date=${date}`}
+            className={cn(buttonVariants({ size: "sm" }))}
+          >
+            New job
+          </Link>
+          <Link
             to={`/calendar/${day.subtract({ days: 1 }).toString()}`}
             className={dayLinkClass}
           >
