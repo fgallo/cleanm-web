@@ -44,11 +44,21 @@ cookie, so every request to the API is sent with credentials. API conventions
   (`describeOutsideFields`). A field left blank is sent as `null`
   (`emptyAsNull` in `src/lib/form.ts`).
 - `src/components/job-calendar.tsx`: the only module that imports
-  FullCalendar. It takes jobs and reports the days on screen; the page
-  (`src/pages/calendar.tsx`) asks the API for that range. Its colors are the
-  shadcn tokens, mapped in `job-calendar.css` in place of the theme's palette.
+  FullCalendar. It takes jobs and reports the days on screen and what was
+  clicked, a job or a day; the page (`src/pages/calendar.tsx`) asks the API
+  for that range and decides where a click leads. Its colors are the shadcn
+  tokens, mapped in `job-calendar.css` in place of the theme's palette.
   Date arithmetic uses `Temporal` from `temporal-polyfill` (`PlainDate`,
   `PlainDateTime`): a job's date and time have no time zone.
+- `src/pages/day.tsx` (`/calendar/:date`): the jobs of one day with the
+  details of each visit, where a click on the calendar leads. Its "Back to
+  calendar" carries the day as `/calendar?date=`, the day the calendar opens
+  on.
+- `src/lib/`: what pages share that is not a component. `format.ts` is how
+  money, hours, days and times read on screen (`en-CA` and CAD, like the
+  API's invoice PDF, until the organization has a locale); `dates.ts` reads
+  a YYYY-MM-DD from a URL (`parseDay`); `job-labels.ts` names the API's
+  service types and statuses.
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
