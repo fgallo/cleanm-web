@@ -10,6 +10,7 @@ import {
 import RequestFailed from "@/components/request-failed.tsx";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cityLine } from "@/lib/address.ts";
 
 export default function ClientPage() {
   const { clientId } = useParams();
@@ -127,11 +128,4 @@ function PropertyCard({ property }: { property: Property }) {
       </CardContent>
     </Card>
   );
-}
-
-// "Toronto, ON M4B 1B3". The country is shown only when it is not CA, the
-// API's default: the first business is in Toronto.
-function cityLine({ city, province, postalCode, country }: Property): string {
-  const line = `${city}, ${province} ${postalCode}`;
-  return country === "CA" ? line : `${line}, ${country}`;
 }
