@@ -1,11 +1,19 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 
 import { jobsQueryOptions, type DateRange } from "@/api/jobs.ts";
 import JobCalendar from "@/components/job-calendar.tsx";
 import RequestFailed from "@/components/request-failed.tsx";
+import { parseDay } from "@/lib/dates.ts";
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // `?date=` is how the page of a day sends its reader back to the month
+  // that day is in. Anything that is not a day opens the calendar on today.
+  const initialDate = parseDay(searchParams.get("date") ?? "")?.toString();
+
   // Unknown until the calendar has rendered and said which days it shows.
   const [range, setRange] = useState<DateRange | null>(null);
   const jobs = useQuery({
@@ -34,6 +42,7 @@ export default function CalendarPage() {
       )}
       <JobCalendar
         jobs={jobs.data ?? []}
+        initialDate={initialDate}
         onRangeChange={(next) =>
           // The calendar reports its dates on every render of a view; the
           // same days must not become a new state.
@@ -43,6 +52,9 @@ export default function CalendarPage() {
               : next,
           )
         }
+        // A job opens the list of its day, where its details are.
+        onJobClick={(job) => void navigate(`/calendar/${job.scheduledDate}`)}
+        onDayClick={(date) => void navigate(`/calendar/${date}`)}
       />
     </>
   );
