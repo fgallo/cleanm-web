@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { get } from "./client.ts";
+import { get, patch, post } from "./client.ts";
 
 // The shape GET /helpers returns. A helper who left stays in the list with
 // `active: false`: the jobs they did still name them, but the API refuses
@@ -14,9 +14,18 @@ export type Helper = {
   updatedAt: string;
 };
 
+// What the helper form holds. `null` leaves the phone empty on create and
+// clears it on update.
+export type HelperInput = {
+  name: string;
+  phone: string | null;
+  active: boolean;
+};
+
 export const helperKeys = {
   all: ["helpers"] as const,
   list: () => [...helperKeys.all, "list"] as const,
+  detail: (id: string) => [...helperKeys.all, "detail", id] as const,
 };
 
 // Every helper of the organization, ordered by name.
@@ -24,3 +33,19 @@ export const helperListQueryOptions = queryOptions({
   queryKey: helperKeys.list(),
   queryFn: () => get<Helper[]>("/helpers"),
 });
+
+export function helperQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: helperKeys.detail(id),
+    queryFn: () => get<Helper>(`/helpers/${id}`),
+  });
+}
+
+// A new helper is always active: POST /helpers takes no `active`.
+export function createHelper({ name, phone }: HelperInput): Promise<Helper> {
+  return post<Helper>("/helpers", { name, phone });
+}
+
+export function updateHelper(id: string, input: HelperInput): Promise<Helper> {
+  return patch<Helper>(`/helpers/${id}`, input);
+}
