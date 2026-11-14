@@ -9,7 +9,8 @@ export type Helper = {
   id: string;
   name: string;
   phone: string | null;
-  // What the helper is paid for an hour of work; `null` when not set.
+  // What the helper is usually paid for an hour of work; `null` when not
+  // set.
   hourlyRateCents: number | null;
   active: boolean;
   createdAt: string;
