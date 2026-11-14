@@ -47,7 +47,9 @@ cookie, so every request to the API is sent with credentials. API conventions
   minutes and cents (the conversions are in `src/lib/form.ts`); its selects
   are the shadcn `native-select`. `updateJob` in `src/api/jobs.ts` sends
   only the fields that changed: the API refuses an inactive helper even on
-  the job that already has them.
+  the job that already has them. For a new job the page
+  (`src/pages/job-new.tsx`, `/jobs/new?date=`) puts the client and property
+  fields inside the same form, through `children`, and keeps their state.
 - `src/components/job-calendar.tsx`: the only module that imports
   FullCalendar. It takes jobs and reports the days on screen and what was
   clicked, a job or a day; the page (`src/pages/calendar.tsx`) asks the API
@@ -60,6 +62,8 @@ cookie, so every request to the API is sent with credentials. API conventions
   calendar" carries the day as `/calendar?date=`, the day the calendar opens
   on. Each job links to its form (`src/pages/job-edit.tsx`,
   `/jobs/:jobId/edit`), which returns to the day the job is on once saved.
+  "New job" offers a job on that day; from the calendar it offers today in
+  the organization's time zone.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, days and times read on screen (`en-CA` and CAD, like the
   API's invoice PDF, until the organization has a locale); `dates.ts` reads
