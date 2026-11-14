@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { get, patch } from "./client.ts";
+import { get, patch, post } from "./client.ts";
 
 export const serviceTypes = ["regular", "deep", "move_in", "move_out"] as const;
 export type ServiceType = (typeof serviceTypes)[number];
@@ -88,6 +88,13 @@ export function jobQueryOptions(id: string) {
     queryKey: jobKeys.detail(id),
     queryFn: () => get<Job>(`/jobs/${id}`),
   });
+}
+
+// What POST /jobs takes: the same fields and the property the job is at.
+export function createJob(
+  input: JobInput & { propertyId: string },
+): Promise<Job> {
+  return post<Job>("/jobs", input);
 }
 
 // A job as its form starts from it, and as an update is compared with it.
