@@ -15,18 +15,28 @@ import type { DateRange, Job } from "@/api/jobs.ts";
 
 // The month and week calendar of jobs. The only module that imports
 // FullCalendar: the page gives it jobs and is told which days are on
-// screen, so that it can ask the API for them.
+// screen, so that it can ask the API for them, and what was clicked, so
+// that it can decide where that leads.
 export default function JobCalendar({
   jobs,
+  initialDate,
   onRangeChange,
+  onJobClick,
+  onDayClick,
 }: {
   jobs: Job[];
+  // The day (YYYY-MM-DD) the calendar opens on; today when absent.
+  initialDate?: string;
   onRangeChange: (range: DateRange) => void;
+  onJobClick: (job: Job) => void;
+  // A day was clicked: its number in the month, its heading in the week.
+  onDayClick: (date: string) => void;
 }) {
   return (
     <FullCalendar
       plugins={[dayGridPlugin, timeGridPlugin, classicThemePlugin]}
       initialView="dayGridMonth"
+      initialDate={initialDate}
       headerToolbar={{
         left: "prev,next today",
         center: "title",
@@ -34,6 +44,16 @@ export default function JobCalendar({
       }}
       events={jobs.map(toEvent)}
       datesSet={(info) => onRangeChange(toRange(info))}
+      // A click handler is also what makes the events reachable with the
+      // keyboard: FullCalendar renders them focusable when there is one.
+      eventClick={(info) => {
+        const job = jobs.find((candidate) => candidate.id === info.event.id);
+        if (job !== undefined) {
+          onJobClick(job);
+        }
+      }}
+      navLinks
+      navLinkDayClick={(date) => onDayClick(toDay(date))}
       eventTimeFormat={{
         hour: "numeric",
         minute: "2-digit",
@@ -64,6 +84,16 @@ function toEvent(job: Job): EventInput {
     end: start.add({ minutes: job.durationMinutes }).toString(),
     className: job.status === "cancelled" ? "line-through opacity-60" : "",
   };
+}
+
+// FullCalendar hands a clicked day as a `Date` at midnight in the browser's
+// zone, so its local year, month and day are the day that was clicked.
+function toDay(date: Date): string {
+  return new Temporal.PlainDate(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+  ).toString();
 }
 
 // The days on screen, which for a month include the tail of the previous
