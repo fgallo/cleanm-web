@@ -16,9 +16,9 @@ import {
   NativeSelect,
   NativeSelectOption,
 } from "@/components/ui/native-select";
-import { emptyAsNull } from "@/lib/form.ts";
+import { centsToDollars, dollarsToCents, emptyAsNull } from "@/lib/form.ts";
 
-const fields = ["name", "phone", "active"] as const;
+const fields = ["name", "phone", "hourlyRateCents", "active"] as const;
 
 // The fields of a helper, for adding one (`helper` absent) and for editing
 // one. Only an existing helper has a status to change: a new one is active.
@@ -41,15 +41,28 @@ export default function HelperForm({
 }) {
   const [name, setName] = useState(helper?.name ?? "");
   const [phone, setPhone] = useState(helper?.phone ?? "");
+  // Typed in dollars, sent in cents; blank while no rate was agreed.
+  const [hourlyRate, setHourlyRate] = useState(
+    helper === undefined || helper.hourlyRateCents === null
+      ? ""
+      : centsToDollars(helper.hourlyRateCents),
+  );
   const [active, setActive] = useState(helper?.active ?? true);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit({ name, phone: emptyAsNull(phone), active });
+    onSubmit({
+      name,
+      phone: emptyAsNull(phone),
+      hourlyRateCents:
+        hourlyRate.trim() === "" ? null : dollarsToCents(hourlyRate),
+      active,
+    });
   }
 
   const nameIssues = issuesFor(error, "name");
   const phoneIssues = issuesFor(error, "phone");
+  const hourlyRateIssues = issuesFor(error, "hourlyRateCents");
   const activeIssues = issuesFor(error, "active");
   const formMessage =
     error === null ? null : describeOutsideFields(error, fields);
@@ -82,6 +95,24 @@ export default function HelperForm({
             onChange={(event) => setPhone(event.target.value)}
           />
           <FieldError errors={phoneIssues} />
+        </Field>
+        <Field data-invalid={hourlyRateIssues.length > 0}>
+          <FieldLabel htmlFor="hourlyRate">Hourly rate</FieldLabel>
+          <Input
+            id="hourlyRate"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            aria-invalid={hourlyRateIssues.length > 0}
+            aria-describedby="hourlyRate-description"
+            value={hourlyRate}
+            onChange={(event) => setHourlyRate(event.target.value)}
+          />
+          <FieldDescription id="hourlyRate-description">
+            What the helper is paid for an hour of work.
+          </FieldDescription>
+          <FieldError errors={hourlyRateIssues} />
         </Field>
         {helper !== undefined && (
           <Field data-invalid={activeIssues.length > 0}>

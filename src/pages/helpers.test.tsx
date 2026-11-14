@@ -43,9 +43,11 @@ test("lists the helpers from the menu, those who left included", async () => {
   await screen.findByText("Carla Invented");
   const active = within(rowOf("Carla Invented"));
   expect(active.getByText("416-555-0140")).toBeDefined();
+  expect(active.getByText("$22.50")).toBeDefined();
   expect(active.getByText("Active")).toBeDefined();
   const left = within(rowOf("Dan Former"));
-  expect(left.getByText("—")).toBeDefined();
+  // Neither a phone nor an hourly rate.
+  expect(left.getAllByText("—")).toHaveLength(2);
   expect(left.getByText("Inactive")).toBeDefined();
 });
 
@@ -82,6 +84,7 @@ test("adds a helper and returns to the list", async () => {
     id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d42",
     name: "Eva Sample",
     phone: null,
+    hourlyRateCents: 2150,
     active: true,
     createdAt: "2026-11-14T15:00:00.000Z",
     updatedAt: "2026-11-14T15:00:00.000Z",
@@ -106,14 +109,18 @@ test("adds a helper and returns to the list", async () => {
   // A new helper is active: there is no status to choose yet.
   expect(screen.queryByLabelText("Status")).toBeNull();
   fill("Name", "Eva Sample");
+  fill("Hourly rate", "21.5");
   fireEvent.click(screen.getByRole("button", { name: "Add helper" }));
 
   expect(await screen.findByText("Eva Sample")).toBeDefined();
   expect(screen.getByRole("heading", { name: "Helpers" })).toBeDefined();
-  // A phone left blank is sent as null, and no status is sent.
+  expect(within(rowOf("Eva Sample")).getByText("$21.50")).toBeDefined();
+  // A phone left blank is sent as null, the rate typed in dollars travels
+  // in cents, and no status is sent.
   expect(requests.find((r) => r.method === "POST")?.body).toEqual({
     name: "Eva Sample",
     phone: null,
+    hourlyRateCents: 2150,
   });
 });
 
@@ -122,6 +129,7 @@ test("edits a helper and makes them inactive", async () => {
     ...carla,
     name: "Carla Retired",
     phone: null,
+    hourlyRateCents: null,
     active: false,
   };
   let saved = false;
@@ -147,19 +155,25 @@ test("edits a helper and makes them inactive", async () => {
   expect(screen.getByLabelText<HTMLInputElement>("Phone").value).toBe(
     "416-555-0140",
   );
+  expect(screen.getByLabelText<HTMLInputElement>("Hourly rate").value).toBe(
+    "22.50",
+  );
   expect(screen.getByLabelText<HTMLSelectElement>("Status").value).toBe(
     "active",
   );
   fill("Name", "Carla Retired");
   fill("Phone", "");
+  fill("Hourly rate", "");
   fill("Status", "inactive");
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
   expect(await screen.findByText("Carla Retired")).toBeDefined();
   expect(within(rowOf("Carla Retired")).getByText("Inactive")).toBeDefined();
+  // A rate left blank clears the one the helper had.
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
     name: "Carla Retired",
     phone: null,
+    hourlyRateCents: null,
     active: false,
   });
 });
