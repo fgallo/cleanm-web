@@ -10,6 +10,7 @@ import ClientsPage from "@/pages/clients.tsx";
 import DayPage from "@/pages/day.tsx";
 import HomePage from "@/pages/home.tsx";
 import JobEditPage from "@/pages/job-edit.tsx";
+import JobNewPage from "@/pages/job-new.tsx";
 import PropertyEditPage from "@/pages/property-edit.tsx";
 import PropertyNewPage from "@/pages/property-new.tsx";
 import SignInPage from "@/pages/sign-in.tsx";
@@ -25,6 +26,7 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="calendar/:date" element={<DayPage />} />
+          <Route path="jobs/new" element={<JobNewPage />} />
           <Route path="jobs/:jobId/edit" element={<JobEditPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/new" element={<ClientNewPage />} />

@@ -1,10 +1,12 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { cn } from "cn";
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 
 import { jobsQueryOptions, type DateRange } from "@/api/jobs.ts";
 import JobCalendar from "@/components/job-calendar.tsx";
 import RequestFailed from "@/components/request-failed.tsx";
+import { buttonVariants } from "@/components/ui/button";
 import { parseDay } from "@/lib/dates.ts";
 
 export default function CalendarPage() {
@@ -28,9 +30,15 @@ export default function CalendarPage() {
     <>
       <div className="mb-4 flex items-center justify-between gap-4">
         <h1 className="font-heading text-xl font-semibold">Calendar</h1>
-        {jobs.isFetching && (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        )}
+        <div className="flex items-center gap-4">
+          {jobs.isFetching && (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          )}
+          {/* For today; a day's own page offers the job on that day. */}
+          <Link to="/jobs/new" className={cn(buttonVariants({ size: "sm" }))}>
+            New job
+          </Link>
+        </div>
       </div>
       {jobs.isError && (
         <div className="mb-4">
