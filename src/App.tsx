@@ -7,6 +7,7 @@ import ClientEditPage from "@/pages/client-edit.tsx";
 import ClientNewPage from "@/pages/client-new.tsx";
 import ClientPage from "@/pages/client.tsx";
 import ClientsPage from "@/pages/clients.tsx";
+import DayPage from "@/pages/day.tsx";
 import HomePage from "@/pages/home.tsx";
 import PropertyEditPage from "@/pages/property-edit.tsx";
 import PropertyNewPage from "@/pages/property-new.tsx";
@@ -22,6 +23,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
           <Route path="calendar" element={<CalendarPage />} />
+          <Route path="calendar/:date" element={<DayPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/new" element={<ClientNewPage />} />
           <Route path="clients/:clientId" element={<ClientPage />} />
