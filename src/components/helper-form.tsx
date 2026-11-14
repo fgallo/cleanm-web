@@ -41,7 +41,8 @@ export default function HelperForm({
 }) {
   const [name, setName] = useState(helper?.name ?? "");
   const [phone, setPhone] = useState(helper?.phone ?? "");
-  // Typed in dollars, sent in cents; blank while no rate was agreed.
+  // The helper's usual rate. Typed in dollars, sent in cents; blank while
+  // none was agreed.
   const [hourlyRate, setHourlyRate] = useState(
     helper === undefined || helper.hourlyRateCents === null
       ? ""
@@ -110,7 +111,7 @@ export default function HelperForm({
             onChange={(event) => setHourlyRate(event.target.value)}
           />
           <FieldDescription id="hourlyRate-description">
-            What the helper is paid for an hour of work.
+            What the helper is usually paid for an hour of work.
           </FieldDescription>
           <FieldError errors={hourlyRateIssues} />
         </Field>
