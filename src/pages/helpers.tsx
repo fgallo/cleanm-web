@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatMoney } from "@/lib/format.ts";
 
 // The people who can be sent to a job with the owner. Those who left stay
 // listed as inactive: the jobs they did still name them.
@@ -44,6 +45,7 @@ export default function HelpersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Hourly rate</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -61,9 +63,12 @@ export default function HelpersPage() {
                   >
                     {helper.name}
                   </TableCell>
+                  <TableCell>{helper.phone ?? <Missing />}</TableCell>
                   <TableCell>
-                    {helper.phone ?? (
-                      <span className="text-muted-foreground">—</span>
+                    {helper.hourlyRateCents === null ? (
+                      <Missing />
+                    ) : (
+                      formatMoney(helper.hourlyRateCents)
                     )}
                   </TableCell>
                   <TableCell>
@@ -89,4 +94,8 @@ export default function HelpersPage() {
         ))}
     </>
   );
+}
+
+function Missing() {
+  return <span className="text-muted-foreground">—</span>;
 }

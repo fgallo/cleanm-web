@@ -9,16 +9,19 @@ export type Helper = {
   id: string;
   name: string;
   phone: string | null;
+  // What the helper is paid for an hour of work; `null` when not set.
+  hourlyRateCents: number | null;
   active: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
-// What the helper form holds. `null` leaves the phone empty on create and
-// clears it on update.
+// What the helper form holds. `null` leaves an optional field empty on
+// create and clears it on update.
 export type HelperInput = {
   name: string;
   phone: string | null;
+  hourlyRateCents: number | null;
   active: boolean;
 };
 
@@ -42,8 +45,12 @@ export function helperQueryOptions(id: string) {
 }
 
 // A new helper is always active: POST /helpers takes no `active`.
-export function createHelper({ name, phone }: HelperInput): Promise<Helper> {
-  return post<Helper>("/helpers", { name, phone });
+export function createHelper({
+  name,
+  phone,
+  hourlyRateCents,
+}: HelperInput): Promise<Helper> {
+  return post<Helper>("/helpers", { name, phone, hourlyRateCents });
 }
 
 export function updateHelper(id: string, input: HelperInput): Promise<Helper> {
