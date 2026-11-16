@@ -98,6 +98,7 @@ test("says when there are no recurring series yet", async () => {
   renderApp({ route: "/recurring-series" });
 
   expect(await screen.findByText("No recurring series yet.")).toBeDefined();
+  expect(screen.getByRole("link", { name: "New series" })).toBeDefined();
 });
 
 test("offers to try again when the series fail to load", async () => {

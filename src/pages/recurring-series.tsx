@@ -6,6 +6,7 @@ import { Temporal } from "temporal-polyfill";
 import { seriesListQueryOptions } from "@/api/recurring-series.ts";
 import { useSession } from "@/auth/session-context.ts";
 import RequestFailed from "@/components/request-failed.tsx";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -28,9 +29,12 @@ export default function RecurringSeriesPage() {
 
   return (
     <>
-      <h1 className="mb-4 font-heading text-xl font-semibold">
-        Recurring series
-      </h1>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <h1 className="font-heading text-xl font-semibold">Recurring series</h1>
+        <Link to="/recurring-series/new" className={buttonVariants()}>
+          New series
+        </Link>
+      </div>
       {series.isPending && <p className="text-muted-foreground">Loading…</p>}
       {series.isError && (
         <RequestFailed
