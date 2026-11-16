@@ -62,6 +62,7 @@ test("adds a series every two weeks from the list", async () => {
     "Choose how often",
     "Every week",
     "Every 2 weeks",
+    "Every 3 weeks",
     "Every 4 weeks",
     "Every month",
   ]);
