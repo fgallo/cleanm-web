@@ -193,7 +193,16 @@ function JobCard({ job }: { job: Job }) {
             </span>
           </Detail>
           <Detail label="Invoice">
-            {job.invoice === null ? "Not invoiced" : `#${job.invoice.number}`}
+            {job.invoice === null ? (
+              "Not invoiced"
+            ) : (
+              <Link
+                to={`/invoices/${job.invoice.id}`}
+                className="underline hover:text-muted-foreground"
+              >
+                #{job.invoice.number}
+              </Link>
+            )}
           </Detail>
           {job.notes !== null && <Detail label="Notes">{job.notes}</Detail>}
         </dl>
