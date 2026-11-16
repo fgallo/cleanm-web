@@ -51,16 +51,14 @@ export type Job = {
   updatedAt: string;
 };
 
-// What can be changed on a job, as PATCH /jobs/:id takes it. The property
-// is not here: it is chosen when the job is created and stays.
-export type JobInput = {
-  scheduledDate: string;
+// What a job and a recurring series, the template of its jobs, have in
+// common: when in the day, what it is, who helps and what it costs.
+export type JobTemplate = {
   // HH:MM, as a time field gives it; the API takes it with or without
   // seconds.
   startTime: string;
   durationMinutes: number;
   serviceType: ServiceType;
-  status: JobStatus;
   hourlyRateCents: number;
   // `null` charges the hourly rate x the duration.
   fixedPriceCents: number | null;
@@ -69,6 +67,13 @@ export type JobInput = {
   // `null` pays the helper their usual rate.
   helperHourlyRateCents: number | null;
   notes: string | null;
+};
+
+// What can be changed on a job, as PATCH /jobs/:id takes it. The property
+// is not here: it is chosen when the job is created and stays.
+export type JobInput = JobTemplate & {
+  scheduledDate: string;
+  status: JobStatus;
 };
 
 // Both dates are YYYY-MM-DD and inclusive, as GET /jobs takes them.
@@ -104,19 +109,38 @@ export function createJob(
   return post<Job>("/jobs", input);
 }
 
+// The template of a job, or of a series, as a form starts from it.
+export function toJobTemplate(
+  source: Pick<
+    Job,
+    | "startTime"
+    | "durationMinutes"
+    | "serviceType"
+    | "hourlyRateCents"
+    | "fixedPriceCents"
+    | "helper"
+    | "helperHourlyRateCents"
+    | "notes"
+  >,
+): JobTemplate {
+  return {
+    startTime: source.startTime.slice(0, 5),
+    durationMinutes: source.durationMinutes,
+    serviceType: source.serviceType,
+    hourlyRateCents: source.hourlyRateCents,
+    fixedPriceCents: source.fixedPriceCents,
+    helperId: source.helper?.id ?? null,
+    helperHourlyRateCents: source.helperHourlyRateCents,
+    notes: source.notes,
+  };
+}
+
 // A job as its form starts from it, and as an update is compared with it.
 export function toJobInput(job: Job): JobInput {
   return {
     scheduledDate: job.scheduledDate,
-    startTime: job.startTime.slice(0, 5),
-    durationMinutes: job.durationMinutes,
-    serviceType: job.serviceType,
     status: job.status,
-    hourlyRateCents: job.hourlyRateCents,
-    fixedPriceCents: job.fixedPriceCents,
-    helperId: job.helper?.id ?? null,
-    helperHourlyRateCents: job.helperHourlyRateCents,
-    notes: job.notes,
+    ...toJobTemplate(job),
   };
 }
 
