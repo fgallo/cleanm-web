@@ -1,6 +1,7 @@
 import type { Session } from "@/api/auth.ts";
 import type { Client } from "@/api/clients.ts";
 import type { Helper } from "@/api/helpers.ts";
+import type { Invoice } from "@/api/invoices.ts";
 import type { Job } from "@/api/jobs.ts";
 import type { Property } from "@/api/properties.ts";
 import type { RecurringSeries } from "@/api/recurring-series.ts";
@@ -226,3 +227,74 @@ export const bobMonthly: RecurringSeries = {
 };
 
 export const series: RecurringSeries[] = [aliceBiweekly, bobMonthly];
+
+// The invoice of Bob's visit: the agreed price with 13% HST, half of it
+// paid by e-transfer. It prints its own copy of Bob and of the business.
+export const bobInvoice: Invoice = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d50",
+  number: 12,
+  issueDate: "2026-11-17",
+  dueDate: null,
+  description: "Move-out cleaning",
+  serviceDate: "2026-11-17",
+  durationMinutes: 150,
+  hourlyRateCents: 5000,
+  fixedPriceCents: 20000,
+  subtotalCents: 20000,
+  fixedDiscountCents: null,
+  discountBasisPoints: null,
+  discountCents: 0,
+  discountDescription: null,
+  taxName: "HST",
+  taxRateBasisPoints: 1300,
+  taxRegistrationNumber: "123456789 RT0001",
+  taxCents: 2600,
+  totalCents: 22600,
+  paidCents: 11300,
+  amountDueCents: 11300,
+  paid: false,
+  locked: false,
+  payments: [
+    {
+      id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d70",
+      paidOn: "2026-11-18",
+      method: "e_transfer",
+      amountCents: 11300,
+      notes: "First half.",
+    },
+  ],
+  notes: "Thank you for your business.",
+  billTo: {
+    name: bob.name,
+    email: null,
+    phone: null,
+    addressLine1: bobCottage.addressLine1,
+    addressLine2: bobCottage.addressLine2,
+    city: bobCottage.city,
+    province: bobCottage.province,
+    postalCode: bobCottage.postalCode,
+    country: bobCottage.country,
+  },
+  issuer: {
+    name: "Example Cleaning",
+    addressLine1: "1 Invented Way",
+    addressLine2: null,
+    city: "Toronto",
+    province: "ON",
+    postalCode: "M5V 0A1",
+    country: "CA",
+    phone: "416-555-0100",
+    email: "hello@example.com",
+    website: null,
+    paymentInstructions: "E-transfer to pay@example.com.",
+  },
+  job: {
+    id: bobVisit.id,
+    scheduledDate: bobVisit.scheduledDate,
+    status: bobVisit.status,
+  },
+  clientId: bob.id,
+  propertyId: bobCottage.id,
+  createdAt: "2026-11-17T21:10:00.000Z",
+  updatedAt: "2026-11-18T15:00:00.000Z",
+};
