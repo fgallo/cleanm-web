@@ -39,7 +39,12 @@ export type Job = {
     notes: string | null;
   };
   client: { id: string; name: string };
-  helper: { id: string; name: string } | null;
+  // `hourlyRateCents` is the helper's usual rate, what this job pays them
+  // for an hour unless it carries a rate of its own.
+  helper: { id: string; name: string; hourlyRateCents: number | null } | null;
+  // What the helper is paid for an hour of this job when it is not their
+  // usual rate. It belongs to the job: it stays when the helper changes.
+  helperHourlyRateCents: number | null;
   recurringSeriesId: string | null;
   invoice: { id: string; number: number } | null;
   createdAt: string;
@@ -61,6 +66,8 @@ export type JobInput = {
   fixedPriceCents: number | null;
   // `null` assigns nobody.
   helperId: string | null;
+  // `null` pays the helper their usual rate.
+  helperHourlyRateCents: number | null;
   notes: string | null;
 };
 
@@ -108,6 +115,7 @@ export function toJobInput(job: Job): JobInput {
     hourlyRateCents: job.hourlyRateCents,
     fixedPriceCents: job.fixedPriceCents,
     helperId: job.helper?.id ?? null,
+    helperHourlyRateCents: job.helperHourlyRateCents,
     notes: job.notes,
   };
 }

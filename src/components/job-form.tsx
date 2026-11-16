@@ -46,6 +46,7 @@ const fields = [
   "hourlyRateCents",
   "fixedPriceCents",
   "helperId",
+  "helperHourlyRateCents",
   "notes",
 ] as const;
 
@@ -102,6 +103,13 @@ export default function JobForm({
   );
   // An empty value is "No helper".
   const [helperId, setHelperId] = useState(initial?.helperId ?? "");
+  // Blank unless this job pays its helper a rate of its own. It belongs to
+  // the job, so it stays as typed when another helper is chosen.
+  const [helperHourlyRate, setHelperHourlyRate] = useState(
+    initial === null || initial.helperHourlyRateCents === null
+      ? ""
+      : centsToDollars(initial.helperHourlyRateCents),
+  );
   const [notes, setNotes] = useState(initial?.notes ?? "");
 
   // Only active helpers can be assigned. The one this job already has stays
@@ -115,6 +123,10 @@ export default function JobForm({
     hours.trim() === "" || hourlyRate.trim() === ""
       ? null
       : Math.round((dollarsToCents(hourlyRate) * hoursToMinutes(hours)) / 60);
+  // What the helper chosen is paid when the job has no rate of its own.
+  // Unknown while nobody is chosen, or while that helper has no usual rate.
+  const usualHelperRateCents =
+    helpers.find((helper) => helper.id === helperId)?.hourlyRateCents ?? null;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -128,6 +140,10 @@ export default function JobForm({
       fixedPriceCents:
         fixedPrice.trim() === "" ? null : dollarsToCents(fixedPrice),
       helperId: helperId === "" ? null : helperId,
+      helperHourlyRateCents:
+        helperHourlyRate.trim() === ""
+          ? null
+          : dollarsToCents(helperHourlyRate),
       notes: emptyAsNull(notes),
     });
   }
@@ -141,6 +157,7 @@ export default function JobForm({
     hourlyRateCents: issuesFor(error, "hourlyRateCents"),
     fixedPriceCents: issuesFor(error, "fixedPriceCents"),
     helperId: issuesFor(error, "helperId"),
+    helperHourlyRateCents: issuesFor(error, "helperHourlyRateCents"),
     notes: issuesFor(error, "notes"),
   };
   const formMessage =
@@ -279,24 +296,48 @@ export default function JobForm({
             <FieldError errors={issues.fixedPriceCents} />
           </Field>
         </div>
-        <Field data-invalid={issues.helperId.length > 0}>
-          <FieldLabel htmlFor="helperId">Helper</FieldLabel>
-          <NativeSelect
-            id="helperId"
-            className="w-full"
-            aria-invalid={issues.helperId.length > 0}
-            value={helperId}
-            onChange={(event) => setHelperId(event.target.value)}
-          >
-            <NativeSelectOption value="">No helper</NativeSelectOption>
-            {offeredHelpers.map((helper) => (
-              <NativeSelectOption key={helper.id} value={helper.id}>
-                {helper.active ? helper.name : `${helper.name} (inactive)`}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <FieldError errors={issues.helperId} />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field data-invalid={issues.helperId.length > 0}>
+            <FieldLabel htmlFor="helperId">Helper</FieldLabel>
+            <NativeSelect
+              id="helperId"
+              className="w-full"
+              aria-invalid={issues.helperId.length > 0}
+              value={helperId}
+              onChange={(event) => setHelperId(event.target.value)}
+            >
+              <NativeSelectOption value="">No helper</NativeSelectOption>
+              {offeredHelpers.map((helper) => (
+                <NativeSelectOption key={helper.id} value={helper.id}>
+                  {helper.active ? helper.name : `${helper.name} (inactive)`}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <FieldError errors={issues.helperId} />
+          </Field>
+          <Field data-invalid={issues.helperHourlyRateCents.length > 0}>
+            <FieldLabel htmlFor="helperHourlyRate">
+              Helper's hourly rate
+            </FieldLabel>
+            <Input
+              id="helperHourlyRate"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              aria-invalid={issues.helperHourlyRateCents.length > 0}
+              aria-describedby="helperHourlyRate-description"
+              value={helperHourlyRate}
+              onChange={(event) => setHelperHourlyRate(event.target.value)}
+            />
+            <FieldDescription id="helperHourlyRate-description">
+              {usualHelperRateCents === null
+                ? "Blank pays the helper's usual rate."
+                : `Blank pays the helper's usual rate: ${formatMoney(usualHelperRateCents)}.`}
+            </FieldDescription>
+            <FieldError errors={issues.helperHourlyRateCents} />
+          </Field>
+        </div>
         <Field data-invalid={issues.notes.length > 0}>
           <FieldLabel htmlFor="notes">Notes about the job</FieldLabel>
           <Textarea

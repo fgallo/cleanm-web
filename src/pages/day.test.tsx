@@ -2,7 +2,14 @@ import { fireEvent, screen, within } from "@testing-library/react";
 import { expect, test } from "vitest";
 
 import { json, mockApi, networkFailure, routes } from "@/test/api.ts";
-import { alice, aliceVisit, bobVisit, session } from "@/test/fixtures.ts";
+import {
+  alice,
+  aliceVisit,
+  bobVisit,
+  dan,
+  onJob,
+  session,
+} from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
 
 // The card of the job whose client has this name.
@@ -55,13 +62,42 @@ test("lists the jobs of a day with what each visit needs", async () => {
   expect(afternoon.getByText("1:30 p.m. – 4:00 p.m.")).toBeDefined();
   expect(afternoon.getByText("Completed")).toBeDefined();
   expect(afternoon.getByText("Move-out")).toBeDefined();
-  expect(afternoon.getByText("Carla Invented")).toBeDefined();
+  // Her usual rate: the job carries none of its own.
+  expect(afternoon.getByText("Helper").nextElementSibling?.textContent).toBe(
+    "Carla Invented at $22.50 an hour",
+  );
   expect(afternoon.getByText("2.5 h")).toBeDefined();
   expect(afternoon.getByText("Price").nextElementSibling?.textContent).toBe(
     "$200.00 agreed price",
   );
   expect(afternoon.getByText("#12")).toBeDefined();
   expect(afternoon.getByText("Bring the long ladder.")).toBeDefined();
+});
+
+test("shows what the helper of each job is paid for an hour", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () =>
+        json(200, [
+          // Dan has no usual rate, and the job carries none.
+          { ...aliceVisit, helper: onJob(dan) },
+          // The job's own rate, in place of Carla's usual $22.50.
+          { ...bobVisit, helperHourlyRateCents: 2500 },
+        ]),
+    }),
+  );
+  renderApp({ route: "/calendar/2026-11-17" });
+
+  await screen.findByRole("heading", { name: "Alice Example" });
+  expect(
+    within(cardOf("Alice Example")).getByText("Helper").nextElementSibling
+      ?.textContent,
+  ).toBe("Dan Former");
+  expect(
+    within(cardOf("Bob Sample")).getByText("Helper").nextElementSibling
+      ?.textContent,
+  ).toBe("Carla Invented at $25.00 an hour");
 });
 
 test("says when a day has no jobs and moves to the days around it", async () => {

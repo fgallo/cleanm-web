@@ -107,6 +107,15 @@ export const dan: Helper = {
 
 export const helpers: Helper[] = [carla, dan];
 
+// A helper as a job embeds them: who they are and their usual rate.
+export function onJob(helper: Helper): NonNullable<Job["helper"]> {
+  return {
+    id: helper.id,
+    name: helper.name,
+    hourlyRateCents: helper.hourlyRateCents,
+  };
+}
+
 // Tuesday morning at Alice's unit: charged by the hour, nobody assigned,
 // not invoiced.
 export const aliceVisit: Job = {
@@ -132,13 +141,15 @@ export const aliceVisit: Job = {
   },
   client: { id: alice.id, name: alice.name },
   helper: null,
+  helperHourlyRateCents: null,
   recurringSeriesId: null,
   invoice: null,
   createdAt: "2026-11-01T14:00:00.000Z",
   updatedAt: "2026-11-01T14:00:00.000Z",
 };
 
-// The same afternoon at Bob's: an agreed price, a helper, already invoiced.
+// The same afternoon at Bob's: an agreed price, a helper at her usual rate,
+// already invoiced.
 export const bobVisit: Job = {
   id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d31",
   scheduledDate: "2026-11-17",
@@ -161,7 +172,8 @@ export const bobVisit: Job = {
     notes: bobCottage.notes,
   },
   client: { id: bob.id, name: bob.name },
-  helper: { id: carla.id, name: carla.name },
+  helper: onJob(carla),
+  helperHourlyRateCents: null,
   recurringSeriesId: null,
   invoice: { id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d50", number: 12 },
   createdAt: "2026-11-02T16:00:00.000Z",
