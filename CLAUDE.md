@@ -85,7 +85,17 @@ cookie, so every request to the API is sent with credentials. API conventions
   never both), so a check on one side tells TypeScript the other;
   `createSeries` sends only the half that is set, since the API takes no
   `null` for the other. A series that ended stays listed, muted once its
-  `endDate` is behind today in the organization's time zone.
+  `endDate` is behind today in the organization's time zone. Each leads to
+  its page (`src/pages/recurring-series-edit.tsx`,
+  `/recurring-series/:seriesId/edit`, also linked from the form of a job of
+  the series), where only the end and the template are fields
+  (`src/components/series-edit-form.tsx`): the API keeps the rule, the first
+  day and the property. `updateSeries` sends only what changed, like
+  `updateJob`. Saving or deleting a series changes its visits on the API's
+  side, so the page asks for the lists of jobs again and drops every job
+  cached on its own (`jobKeys.details()`): a job's form copies the job when
+  it mounts and would start from what the job was. Deleting asks twice, in
+  place, with no dialog; the API's `409` is shown as it comes.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, days and times read on screen (`en-CA` and CAD, like the
   API's invoice PDF, until the organization has a locale); `dates.ts` reads
