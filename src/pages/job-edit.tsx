@@ -86,8 +86,14 @@ function EditForm({ job, helpers }: { job: Job; helpers: Helper[] }) {
         </p>
         {job.recurringSeriesId !== null && (
           <p className="mt-1">
-            Part of a recurring series: what changes here changes this visit
-            only.
+            Part of a{" "}
+            <Link
+              to={`/recurring-series/${job.recurringSeriesId}/edit`}
+              className="underline hover:text-foreground"
+            >
+              recurring series
+            </Link>
+            : what changes here changes this visit only.
           </p>
         )}
         {job.invoice !== null && (

@@ -20,7 +20,8 @@ import { repeatsLabel } from "@/lib/series-labels.ts";
 
 // The visits that repeat: each series is the rule and the template the API
 // generates a recurring client's jobs from. One that ended stays listed,
-// like the visits it generated.
+// like the visits it generated. Each leads to its form
+// (`recurring-series-edit.tsx`), where it is changed, ended or deleted.
 export default function RecurringSeriesPage() {
   const { organization } = useSession();
   const series = useQuery(seriesListQueryOptions);
@@ -56,6 +57,9 @@ export default function RecurringSeriesPage() {
                 <TableHead>Helper</TableHead>
                 <TableHead>Starts</TableHead>
                 <TableHead>Ends</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -91,6 +95,19 @@ export default function RecurringSeriesPage() {
                       ) : (
                         formatDate(Temporal.PlainDate.from(item.endDate))
                       )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {/* A client can have more than one series: the
+                          address tells them apart. */}
+                      <Link
+                        to={`/recurring-series/${item.id}/edit`}
+                        aria-label={`Edit series for ${item.client.name}, ${item.property.addressLine1}`}
+                        className={cn(
+                          buttonVariants({ variant: "ghost", size: "sm" }),
+                        )}
+                      >
+                        Edit
+                      </Link>
                     </TableCell>
                   </TableRow>
                 );
