@@ -96,12 +96,20 @@ cookie, so every request to the API is sent with credentials. API conventions
   cached on its own (`jobKeys.details()`): a job's form copies the job when
   it mounts and would start from what the job was. Deleting asks twice, in
   place, with no dialog; the API's `409` is shown as it comes.
+- `src/pages/invoice.tsx` (`/invoices/:invoiceId`): one invoice, read from
+  the API, where the number on a job of the day page leads. It shows the
+  invoice's own copy (`billTo`, the pricing, the tax), never the client or
+  the job as they are now, and names its lines as the API's PDF does
+  (`src/lib/invoice-labels.ts`). "Open PDF" is a plain link to the API
+  (`invoicePdfUrl` in `src/api/invoices.ts`), opened by the browser in
+  another tab: the session cookie travels with a navigation, so the PDF is
+  not fetched by the page.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
-  money, hours, days and times read on screen (`en-CA` and CAD, like the
-  API's invoice PDF, until the organization has a locale); `dates.ts` reads
-  a YYYY-MM-DD from a URL (`parseDay`); `job-labels.ts` names the API's
-  service types and statuses; `series-labels.ts` says how the rule of a
-  series reads (`repeatsLabel`).
+  money, hours, percentages, days and times read on screen (`en-CA` and CAD,
+  like the API's invoice PDF, until the organization has a locale);
+  `dates.ts` reads a YYYY-MM-DD from a URL (`parseDay`); `job-labels.ts`
+  names the API's service types and statuses; `series-labels.ts` says how
+  the rule of a series reads (`repeatsLabel`).
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
