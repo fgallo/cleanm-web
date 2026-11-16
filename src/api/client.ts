@@ -110,6 +110,11 @@ export function patch<T>(path: string, body: unknown): Promise<T> {
   return request<T>("PATCH", path, body);
 }
 
+// The API answers a delete with `204` and no body.
+export function del(path: string): Promise<void> {
+  return request<void>("DELETE", path);
+}
+
 type ErrorBody = {
   error: { code: string; message: string; issues?: Issue[] };
 };

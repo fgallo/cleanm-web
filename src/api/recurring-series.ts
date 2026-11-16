@@ -1,7 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { get, post } from "./client.ts";
-import type { Job, JobTemplate, ServiceType } from "./jobs.ts";
+import { del, get, patch, post } from "./client.ts";
+import {
+  toJobTemplate,
+  type Job,
+  type JobTemplate,
+  type ServiceType,
+} from "./jobs.ts";
 
 // When a series repeats. Exactly one of the two is set: every N weeks, on
 // the weekday of `startDate`, or a day of the month (the last day of the
@@ -33,19 +38,22 @@ export type RecurringSeries = SeriesRule & {
   updatedAt: string;
 };
 
-// What the form of a series holds: the rule, the days it runs between and
-// the template of its jobs. The property is not here: it is chosen when the
-// series is created and stays.
-export type SeriesInput = SeriesRule &
-  JobTemplate & {
-    startDate: string;
-    // `null` keeps the series going until it is ended.
-    endDate: string | null;
-  };
+// What can change on a series once it exists, as PATCH
+// /recurring-series/:id takes it: when it ends and the template of its
+// jobs. The rule, the first day and the property stay.
+export type SeriesChanges = JobTemplate & {
+  // `null` keeps the series going until it is ended.
+  endDate: string | null;
+};
+
+// What the form of a new series holds: the rule and the first day as well.
+// The property is not here: the page adds it.
+export type SeriesInput = SeriesRule & SeriesChanges & { startDate: string };
 
 export const seriesKeys = {
   all: ["recurring-series"] as const,
   list: () => [...seriesKeys.all, "list"] as const,
+  detail: (id: string) => [...seriesKeys.all, "detail", id] as const,
 };
 
 // Every series of the organization, ordered by client and start date.
@@ -53,6 +61,13 @@ export const seriesListQueryOptions = queryOptions({
   queryKey: seriesKeys.list(),
   queryFn: () => get<RecurringSeries[]>("/recurring-series"),
 });
+
+export function seriesQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: seriesKeys.detail(id),
+    queryFn: () => get<RecurringSeries>(`/recurring-series/${id}`),
+  });
+}
 
 // The API generates the first visits as it creates the series. It takes the
 // half of the rule that is set, and no `null` for the other half.
@@ -65,4 +80,37 @@ export function createSeries({
     ...rest,
     ...(dayOfMonth === null ? { everyWeeks } : { dayOfMonth }),
   });
+}
+
+// A series as its form starts from it, and as an update is compared with it.
+export function toSeriesChanges(series: RecurringSeries): SeriesChanges {
+  return { endDate: series.endDate, ...toJobTemplate(series) };
+}
+
+// Sends only the fields that differ from `series`, like `updateJob`. The API
+// acts on whatever it is sent: it refuses an inactive helper even on the
+// series that already has them, and an `endDate` removes the visits after
+// it. A template field that changed reaches the upcoming visits that still
+// had the previous value.
+export function updateSeries(
+  series: RecurringSeries,
+  input: SeriesChanges,
+): Promise<RecurringSeries> {
+  const current = toSeriesChanges(series);
+  const changes = Object.fromEntries(
+    Object.entries(input).filter(
+      ([field, value]) => value !== current[field as keyof SeriesChanges],
+    ),
+  );
+  // Nothing to ask of the API, which takes no empty update either.
+  if (Object.keys(changes).length === 0) {
+    return Promise.resolve(series);
+  }
+  return patch<RecurringSeries>(`/recurring-series/${series.id}`, changes);
+}
+
+// Removes the series and its visits. The API refuses (`409`) once one of
+// them was completed, cancelled or invoiced: such a series is ended instead.
+export function deleteSeries(id: string): Promise<void> {
+  return del(`/recurring-series/${id}`);
 }

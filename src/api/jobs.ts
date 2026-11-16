@@ -85,7 +85,10 @@ export const jobKeys = {
   // stale, on the calendar and on the page of a day.
   ranges: () => [...jobKeys.all, "range"] as const,
   range: ({ from, to }: DateRange) => [...jobKeys.ranges(), from, to] as const,
-  detail: (id: string) => [...jobKeys.all, "detail", id] as const,
+  // Every job fetched on its own: what a change to the series behind them
+  // makes stale.
+  details: () => [...jobKeys.all, "detail"] as const,
+  detail: (id: string) => [...jobKeys.details(), id] as const,
 };
 
 export function jobsQueryOptions(range: DateRange) {
