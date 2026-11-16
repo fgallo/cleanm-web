@@ -34,9 +34,10 @@ const fields = [
   ...templateFieldNames,
 ] as const;
 
-// The rhythms the business has (brief, section 3): weekly, every two weeks,
-// and the two forms of monthly, every four weeks or a day of the month.
-const weeklyChoices = [1, 2, 4];
+// The rhythms on offer: weekly, every two or three weeks, and the two forms
+// of monthly the business has (brief, section 3), every four weeks or a day
+// of the month. The API takes any number of weeks up to 52.
+const weeklyChoices = [1, 2, 3, 4];
 const everyMonth = "month";
 
 // A new recurring series: how often, between which days, and the template
