@@ -45,9 +45,12 @@ cookie, so every request to the API is sent with credentials. API conventions
   (`emptyAsNull` in `src/lib/form.ts`). The job form
   (`src/components/job-form.tsx`) is filled in hours and dollars and sends
   minutes and cents (the conversions are in `src/lib/form.ts`); its selects
-  are the shadcn `native-select`. `updateJob` in `src/api/jobs.ts` sends
-  only the fields that changed: the API refuses an inactive helper even on
-  the job that already has them. For a new job the page
+  are the shadcn `native-select`. The helper's hourly rate stays blank unless
+  the job pays one of its own (`helperHourlyRateCents`); the field names the
+  usual rate of the helper chosen, and the day page shows the rate in effect
+  (the job's own, otherwise the helper's). `updateJob` in `src/api/jobs.ts`
+  sends only the fields that changed: the API refuses an inactive helper even
+  on the job that already has them. For a new job the page
   (`src/pages/job-new.tsx`, `/jobs/new?date=`) puts the client and property
   fields inside the same form, through `children`, and keeps their state.
 - `src/components/job-calendar.tsx`: the only module that imports
