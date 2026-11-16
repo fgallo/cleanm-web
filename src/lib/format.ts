@@ -19,6 +19,11 @@ export function formatHours(minutes: number): string {
   return `${quantity.format(minutes / 60)} h`;
 }
 
+// Basis points as a percentage, "13%" or "12.5%": 100 of them are 1%.
+export function formatPercent(basisPoints: number): string {
+  return `${quantity.format(basisPoints / 100)}%`;
+}
+
 // "Tuesday, November 17, 2026".
 export function formatDay(day: Temporal.PlainDate): string {
   return day.toLocaleString(locale, {
