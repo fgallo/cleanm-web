@@ -3,6 +3,7 @@ import type { Client } from "@/api/clients.ts";
 import type { Helper } from "@/api/helpers.ts";
 import type { Job } from "@/api/jobs.ts";
 import type { Property } from "@/api/properties.ts";
+import type { RecurringSeries } from "@/api/recurring-series.ts";
 
 // Invented, like the API's seed data.
 export const session: Session = {
@@ -179,3 +180,49 @@ export const bobVisit: Job = {
   createdAt: "2026-11-02T16:00:00.000Z",
   updatedAt: "2026-11-17T21:10:00.000Z",
 };
+
+// Alice's unit every other Tuesday, with Carla at her usual rate, still
+// going on.
+export const aliceBiweekly: RecurringSeries = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d60",
+  everyWeeks: 2,
+  dayOfMonth: null,
+  startDate: "2026-11-03",
+  endDate: null,
+  startTime: "09:00:00",
+  durationMinutes: 180,
+  serviceType: "regular",
+  hourlyRateCents: 4500,
+  fixedPriceCents: null,
+  notes: null,
+  property: aliceVisit.property,
+  client: aliceVisit.client,
+  helper: onJob(carla),
+  helperHourlyRateCents: null,
+  createdAt: "2026-11-01T14:00:00.000Z",
+  updatedAt: "2026-11-01T14:00:00.000Z",
+};
+
+// Bob's cottage on the 14th of every month, at an agreed price, nobody
+// assigned. It ended in October.
+export const bobMonthly: RecurringSeries = {
+  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d61",
+  everyWeeks: null,
+  dayOfMonth: 14,
+  startDate: "2026-05-14",
+  endDate: "2026-10-14",
+  startTime: "13:30:00",
+  durationMinutes: 150,
+  serviceType: "deep",
+  hourlyRateCents: 5000,
+  fixedPriceCents: 20000,
+  notes: "Bring the long ladder.",
+  property: bobVisit.property,
+  client: bobVisit.client,
+  helper: null,
+  helperHourlyRateCents: null,
+  createdAt: "2026-05-10T15:00:00.000Z",
+  updatedAt: "2026-10-01T15:00:00.000Z",
+};
+
+export const series: RecurringSeries[] = [aliceBiweekly, bobMonthly];
