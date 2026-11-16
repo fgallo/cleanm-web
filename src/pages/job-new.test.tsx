@@ -210,7 +210,12 @@ test("says when the client has no property to hold a job", async () => {
   fill("Start time", "09:00");
   fill("Hours", "3");
   fill("Hourly rate", "45");
+  expect(
+    screen.getByLabelText<HTMLSelectElement>("Property").validity.valueMissing,
+  ).toBe(true);
   fireEvent.click(screen.getByRole("button", { name: "Add job" }));
+  // A request would leave a moment after the click, not during it.
+  await new Promise((resolve) => setTimeout(resolve, 0));
   expect(requests.some((r) => r.method === "POST")).toBe(false);
 });
 
