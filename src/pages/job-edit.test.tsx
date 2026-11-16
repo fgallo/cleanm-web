@@ -10,6 +10,7 @@ import {
   validationError,
 } from "@/test/api.ts";
 import {
+  aliceBiweekly,
   aliceVisit,
   bobVisit,
   carla,
@@ -101,7 +102,7 @@ test("edits a job from its day and sends only what changed", async () => {
 test("follows a job to the day it is moved to", async () => {
   const weekly: Job = {
     ...aliceVisit,
-    recurringSeriesId: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d60",
+    recurringSeriesId: aliceBiweekly.id,
   };
   const moved: Job = {
     ...weekly,
@@ -119,11 +120,16 @@ test("follows a job to the day it is moved to", async () => {
   );
   renderApp({ route: `/jobs/${weekly.id}/edit` });
 
-  expect(
-    await screen.findByText(
-      "Part of a recurring series: what changes here changes this visit only.",
-    ),
-  ).toBeDefined();
+  // The series is one click away, for a change to every visit.
+  const seriesLink = await screen.findByRole("link", {
+    name: "recurring series",
+  });
+  expect(seriesLink.getAttribute("href")).toBe(
+    `/recurring-series/${aliceBiweekly.id}/edit`,
+  );
+  expect(seriesLink.parentElement?.textContent).toBe(
+    "Part of a recurring series: what changes here changes this visit only.",
+  );
   fill("Date", "2026-11-18");
   fill("Start time", "10:30");
   save();

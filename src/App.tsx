@@ -16,6 +16,7 @@ import JobEditPage from "@/pages/job-edit.tsx";
 import JobNewPage from "@/pages/job-new.tsx";
 import PropertyEditPage from "@/pages/property-edit.tsx";
 import PropertyNewPage from "@/pages/property-new.tsx";
+import RecurringSeriesEditPage from "@/pages/recurring-series-edit.tsx";
 import RecurringSeriesNewPage from "@/pages/recurring-series-new.tsx";
 import RecurringSeriesPage from "@/pages/recurring-series.tsx";
 import SignInPage from "@/pages/sign-in.tsx";
@@ -40,6 +41,10 @@ export default function App() {
           <Route
             path="recurring-series/new"
             element={<RecurringSeriesNewPage />}
+          />
+          <Route
+            path="recurring-series/:seriesId/edit"
+            element={<RecurringSeriesEditPage />}
           />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/new" element={<ClientNewPage />} />
