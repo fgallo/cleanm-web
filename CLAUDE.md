@@ -67,11 +67,18 @@ cookie, so every request to the API is sent with credentials. API conventions
   `/jobs/:jobId/edit`), which returns to the day the job is on once saved.
   "New job" offers a job on that day; from the calendar it offers today in
   the organization's time zone.
+- `src/pages/recurring-series.tsx` (`/recurring-series`): the series the API
+  generates a recurring client's visits from. In `src/api/recurring-series.ts`
+  the rule is a union (`SeriesRule`: every N weeks or a day of the month,
+  never both), so a check on one side tells TypeScript the other. A series
+  that ended stays listed, muted once its `endDate` is behind today in the
+  organization's time zone.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, days and times read on screen (`en-CA` and CAD, like the
   API's invoice PDF, until the organization has a locale); `dates.ts` reads
   a YYYY-MM-DD from a URL (`parseDay`); `job-labels.ts` names the API's
-  service types and statuses.
+  service types and statuses; `series-labels.ts` says how the rule of a
+  series reads (`repeatsLabel`).
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
