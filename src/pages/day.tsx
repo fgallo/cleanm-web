@@ -122,6 +122,12 @@ const statusVariants: Record<
 function JobCard({ job }: { job: Job }) {
   const start = Temporal.PlainTime.from(job.startTime);
   const end = start.add({ minutes: job.durationMinutes });
+  // What the helper is paid for an hour of this job: the rate the job
+  // carries, otherwise their usual one. Unknown while neither is set.
+  const helperRateCents =
+    job.helper === null
+      ? null
+      : (job.helperHourlyRateCents ?? job.helper.hourlyRateCents);
 
   return (
     <Card size="sm" className={cn(job.status === "cancelled" && "opacity-60")}>
@@ -165,7 +171,17 @@ function JobCard({ job }: { job: Job }) {
         )}
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
           <Detail label="Service">{serviceTypeLabels[job.serviceType]}</Detail>
-          <Detail label="Helper">{job.helper?.name ?? "No helper"}</Detail>
+          <Detail label="Helper">
+            {job.helper?.name ?? "No helper"}
+            {helperRateCents !== null && (
+              <>
+                {" "}
+                <span className="text-muted-foreground">
+                  at {formatMoney(helperRateCents)} an hour
+                </span>
+              </>
+            )}
+          </Detail>
           <Detail label="Hours">{formatHours(job.durationMinutes)}</Detail>
           <Detail label="Price">
             {formatMoney(job.priceCents)}{" "}

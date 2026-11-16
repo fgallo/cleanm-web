@@ -13,6 +13,7 @@ import {
   carla,
   clients,
   helpers,
+  onJob,
   session,
 } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
@@ -47,7 +48,7 @@ test("adds a job to a day, at a property of the client chosen", async () => {
     durationMinutes: 150,
     serviceType: "deep",
     priceCents: 11250,
-    helper: { id: carla.id, name: carla.name },
+    helper: onJob(carla),
     notes: "First visit.",
   };
   let saved = false;
@@ -116,6 +117,7 @@ test("adds a job to a day, at a property of the client chosen", async () => {
     hourlyRateCents: 4500,
     fixedPriceCents: null,
     helperId: carla.id,
+    helperHourlyRateCents: null,
     notes: "First visit.",
   });
 });

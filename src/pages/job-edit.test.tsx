@@ -15,6 +15,7 @@ import {
   carla,
   dan,
   helpers,
+  onJob,
   session,
 } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
@@ -39,7 +40,7 @@ test("edits a job from its day and sends only what changed", async () => {
     status: "completed",
     durationMinutes: 210,
     priceCents: 15750,
-    helper: { id: carla.id, name: carla.name },
+    helper: onJob(carla),
   };
   let saved = false;
   const requests = mockApi(
@@ -177,11 +178,80 @@ test("clears an agreed price and sends money as cents", async () => {
   });
 });
 
+test("assigns a helper at a rate of the job's own", async () => {
+  const special: Job = {
+    ...aliceVisit,
+    helper: onJob(carla),
+    helperHourlyRateCents: 2500,
+  };
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [special]),
+      [`GET /jobs/${aliceVisit.id}`]: () => json(200, aliceVisit),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH /jobs/${aliceVisit.id}`]: () => json(200, special),
+    }),
+  );
+  renderApp({ route: `/jobs/${aliceVisit.id}/edit` });
+
+  await screen.findByLabelText("Helper's hourly rate");
+  expect(valueOf("Helper's hourly rate")).toBe("");
+  // Nobody chosen yet: there is no usual rate to name.
+  expect(screen.getByText("Blank pays the helper's usual rate.")).toBeDefined();
+  fill("Helper", carla.id);
+  expect(
+    screen.getByText("Blank pays the helper's usual rate: $22.50."),
+  ).toBeDefined();
+  fill("Helper's hourly rate", "25");
+  save();
+
+  // The day shows the rate in effect on the job.
+  expect(await screen.findByText("at $25.00 an hour")).toBeDefined();
+  expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
+    helperId: carla.id,
+    helperHourlyRateCents: 2500,
+  });
+});
+
+test("returns a job to the usual rate of its helper", async () => {
+  const special: Job = {
+    ...aliceVisit,
+    helper: onJob(carla),
+    helperHourlyRateCents: 2500,
+  };
+  const usual: Job = { ...special, helperHourlyRateCents: null };
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [usual]),
+      [`GET /jobs/${special.id}`]: () => json(200, special),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH /jobs/${special.id}`]: () => json(200, usual),
+    }),
+  );
+  renderApp({ route: `/jobs/${special.id}/edit` });
+
+  await screen.findByLabelText("Helper's hourly rate");
+  expect(valueOf("Helper's hourly rate")).toBe("25.00");
+  // The rate belongs to the job: it stays as typed without a helper.
+  fill("Helper", "");
+  expect(valueOf("Helper's hourly rate")).toBe("25.00");
+  fill("Helper", carla.id);
+  fill("Helper's hourly rate", "");
+  save();
+
+  expect(await screen.findByText("at $22.50 an hour")).toBeDefined();
+  expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
+    helperHourlyRateCents: null,
+  });
+});
+
 test("keeps an inactive helper on a job without sending them again", async () => {
   // The API refuses to assign Dan, even to the job he already has.
   const dansJob: Job = {
     ...bobVisit,
-    helper: { id: dan.id, name: dan.name },
+    helper: onJob(dan),
   };
   const noted: Job = { ...dansJob, notes: "Gate code 4321." };
   const requests = mockApi(
@@ -200,6 +270,8 @@ test("keeps an inactive helper on a job without sending them again", async () =>
   expect(
     screen.getByRole("option", { name: "Dan Former (inactive)" }),
   ).toBeDefined();
+  // Dan has no usual rate: there is no amount to name.
+  expect(screen.getByText("Blank pays the helper's usual rate.")).toBeDefined();
   fill("Notes about the job", " Gate code 4321. ");
   save();
 
