@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { get } from "./client.ts";
-import type { Job, ServiceType } from "./jobs.ts";
+import { get, post } from "./client.ts";
+import type { Job, JobTemplate, ServiceType } from "./jobs.ts";
 
 // When a series repeats. Exactly one of the two is set: every N weeks, on
 // the weekday of `startDate`, or a day of the month (the last day of the
@@ -33,6 +33,16 @@ export type RecurringSeries = SeriesRule & {
   updatedAt: string;
 };
 
+// What the form of a series holds: the rule, the days it runs between and
+// the template of its jobs. The property is not here: it is chosen when the
+// series is created and stays.
+export type SeriesInput = SeriesRule &
+  JobTemplate & {
+    startDate: string;
+    // `null` keeps the series going until it is ended.
+    endDate: string | null;
+  };
+
 export const seriesKeys = {
   all: ["recurring-series"] as const,
   list: () => [...seriesKeys.all, "list"] as const,
@@ -43,3 +53,16 @@ export const seriesListQueryOptions = queryOptions({
   queryKey: seriesKeys.list(),
   queryFn: () => get<RecurringSeries[]>("/recurring-series"),
 });
+
+// The API generates the first visits as it creates the series. It takes the
+// half of the rule that is set, and no `null` for the other half.
+export function createSeries({
+  everyWeeks,
+  dayOfMonth,
+  ...rest
+}: SeriesInput & { propertyId: string }): Promise<RecurringSeries> {
+  return post<RecurringSeries>("/recurring-series", {
+    ...rest,
+    ...(dayOfMonth === null ? { everyWeeks } : { dayOfMonth }),
+  });
+}
