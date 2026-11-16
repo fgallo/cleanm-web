@@ -1,10 +1,13 @@
 import FullCalendar, {
   type DatesSetInfo,
+  type EventDisplayInfo,
   type EventInput,
 } from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import classicThemePlugin from "@fullcalendar/react/themes/classic";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
+import { cn } from "cn";
+import { ReceiptText } from "lucide-react";
 import { Temporal } from "temporal-polyfill";
 
 import "@fullcalendar/react/skeleton.css";
@@ -43,6 +46,12 @@ export default function JobCalendar({
         right: "dayGridMonth,timeGridWeek",
       }}
       events={jobs.map(toEvent)}
+      eventContent={(info) => (
+        <JobEvent
+          info={info}
+          job={jobs.find((candidate) => candidate.id === info.event.id)}
+        />
+      )}
       datesSet={(info) => onRangeChange(toRange(info))}
       // A click handler is also what makes the events reachable with the
       // keyboard: FullCalendar renders them focusable when there is one.
@@ -68,6 +77,36 @@ export default function JobCalendar({
       height="calc(100dvh - 11rem)"
       scrollTime="07:00:00"
     />
+  );
+}
+
+// What an event says: the time and the client, as FullCalendar writes them
+// and in the classes its theme gives each, and a mark after the name once
+// the job has an invoice. The name is what gives way in a narrow cell, so
+// the mark stays in sight.
+function JobEvent({
+  info,
+  job,
+}: {
+  info: EventDisplayInfo;
+  job: Job | undefined;
+}) {
+  const invoice = job?.invoice ?? null;
+  return (
+    <>
+      {info.timeText !== "" && (
+        <div className={info.timeClass}>{info.timeText}</div>
+      )}
+      <div className={cn(info.titleClass, "flex items-center gap-1")}>
+        <span className="truncate">{info.event.title}</span>
+        {invoice !== null && (
+          // The title is what a pointer shows and a screen reader says.
+          <ReceiptText role="img" className="size-3 shrink-0">
+            <title>{`Invoice #${invoice.number}`}</title>
+          </ReceiptText>
+        )}
+      </div>
+    </>
   );
 }
 

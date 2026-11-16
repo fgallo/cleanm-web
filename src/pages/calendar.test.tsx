@@ -1,8 +1,8 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { json, mockApi, networkFailure, routes } from "@/test/api.ts";
-import { aliceVisit, session } from "@/test/fixtures.ts";
+import { aliceVisit, bobVisit, session } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
 
 // Only the clock is replaced, so the calendar opens on a known month while
@@ -30,6 +30,28 @@ test("shows the jobs of the month on screen", async () => {
   expect(requests.find((r) => r.path === "/jobs")?.url).toBe(
     "http://api.test/jobs?from=2026-11-01&to=2026-12-12",
   );
+});
+
+test("marks the jobs that have an invoice", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [aliceVisit, bobVisit]),
+    }),
+  );
+  renderApp({ route: "/calendar" });
+
+  // The mark sits next to the name of the client it is about, and its title
+  // says which invoice. It is found by that title, not by its role:
+  // FullCalendar keeps an event of the month hidden until it has measured
+  // where it goes, which jsdom never lets it do, and what is hidden has no
+  // accessible name.
+  const invoiced = (await screen.findByText("Bob Sample"))
+    .parentElement as HTMLElement;
+  const mark = within(invoiced).getByTitle("Invoice #12");
+  expect(mark.parentElement?.getAttribute("role")).toBe("img");
+  // Alice's visit has no invoice, and no mark.
+  expect(screen.getAllByTitle(/Invoice/)).toEqual([mark]);
 });
 
 test("keeps the calendar and offers to try again when jobs fail to load", async () => {
