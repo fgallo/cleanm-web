@@ -16,6 +16,7 @@ import JobEditPage from "@/pages/job-edit.tsx";
 import JobNewPage from "@/pages/job-new.tsx";
 import PropertyEditPage from "@/pages/property-edit.tsx";
 import PropertyNewPage from "@/pages/property-new.tsx";
+import RecurringSeriesPage from "@/pages/recurring-series.tsx";
 import SignInPage from "@/pages/sign-in.tsx";
 
 // Every route of the client. `/sign-in` is the only public one; the rest
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="helpers/:helperId/edit" element={<HelperEditPage />} />
           <Route path="jobs/new" element={<JobNewPage />} />
           <Route path="jobs/:jobId/edit" element={<JobEditPage />} />
+          <Route path="recurring-series" element={<RecurringSeriesPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/new" element={<ClientNewPage />} />
           <Route path="clients/:clientId" element={<ClientPage />} />

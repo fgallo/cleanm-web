@@ -33,6 +33,9 @@ export default function AppShell() {
             <NavLink to="/calendar" className={navLinkClass}>
               Calendar
             </NavLink>
+            <NavLink to="/recurring-series" className={navLinkClass}>
+              Recurring
+            </NavLink>
             <NavLink to="/clients" className={navLinkClass}>
               Clients
             </NavLink>
