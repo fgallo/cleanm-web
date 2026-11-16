@@ -42,17 +42,29 @@ cookie, so every request to the API is sent with credentials. API conventions
   of the API's `issues` under the field its `path` names (`issuesFor` in
   `src/api/client.ts`) and any other failure below the fields
   (`describeOutsideFields`). A field left blank is sent as `null`
-  (`emptyAsNull` in `src/lib/form.ts`). The job form
-  (`src/components/job-form.tsx`) is filled in hours and dollars and sends
-  minutes and cents (the conversions are in `src/lib/form.ts`); its selects
-  are the shadcn `native-select`. The helper's hourly rate stays blank unless
-  the job pays one of its own (`helperHourlyRateCents`); the field names the
-  usual rate of the helper chosen, and the day page shows the rate in effect
-  (the job's own, otherwise the helper's). `updateJob` in `src/api/jobs.ts`
-  sends only the fields that changed: the API refuses an inactive helper even
-  on the job that already has them. For a new job the page
-  (`src/pages/job-new.tsx`, `/jobs/new?date=`) puts the client and property
-  fields inside the same form, through `children`, and keeps their state.
+  (`emptyAsNull` in `src/lib/form.ts`). Selects are the shadcn
+  `native-select`.
+- A job and a recurring series share the job template (`JobTemplate` in
+  `src/api/jobs.ts`, as in the API): start time, hours, service, prices,
+  helper and notes. Its fields are one controlled component
+  (`src/components/job-template-fields.tsx`) over a `TemplateDraft`, which
+  holds hours and dollars as typed; `src/lib/job-template.ts` turns it into
+  the minutes and cents that are sent (`toDraft`, `fromDraft`). The job form
+  (`src/components/job-form.tsx`) adds the status and the day, the series
+  form (`src/components/series-form.tsx`) the rule and the days it runs
+  between. The helper's hourly rate stays blank unless the job pays one of
+  its own (`helperHourlyRateCents`); the field names the usual rate of the
+  helper chosen, and the day page shows the rate in effect (the job's own,
+  otherwise the helper's). `updateJob` in `src/api/jobs.ts` sends only the
+  fields that changed: the API refuses an inactive helper even on the job
+  that already has them.
+- A new job (`src/pages/job-new.tsx`, `/jobs/new?date=`) and a new series
+  (`src/pages/recurring-series-new.tsx`, `/recurring-series/new`) are at a
+  property, found through its client. The page keeps that choice
+  (`usePropertyChoice` in `src/lib/use-property-choice.ts`, which takes a
+  client's only property without asking) and puts its fields
+  (`src/components/property-choice-fields.tsx`) inside the form, through
+  `children`.
 - `src/components/job-calendar.tsx`: the only module that imports
   FullCalendar. It takes jobs and reports the days on screen and what was
   clicked, a job or a day; the page (`src/pages/calendar.tsx`) asks the API
@@ -70,9 +82,10 @@ cookie, so every request to the API is sent with credentials. API conventions
 - `src/pages/recurring-series.tsx` (`/recurring-series`): the series the API
   generates a recurring client's visits from. In `src/api/recurring-series.ts`
   the rule is a union (`SeriesRule`: every N weeks or a day of the month,
-  never both), so a check on one side tells TypeScript the other. A series
-  that ended stays listed, muted once its `endDate` is behind today in the
-  organization's time zone.
+  never both), so a check on one side tells TypeScript the other;
+  `createSeries` sends only the half that is set, since the API takes no
+  `null` for the other. A series that ended stays listed, muted once its
+  `endDate` is behind today in the organization's time zone.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, days and times read on screen (`en-CA` and CAD, like the
   API's invoice PDF, until the organization has a locale); `dates.ts` reads
