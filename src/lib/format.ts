@@ -29,6 +29,20 @@ export function formatDay(day: Temporal.PlainDate): string {
   });
 }
 
+// "Nov 17, 2026": a day where a list has no room for the weekday.
+export function formatDate(day: Temporal.PlainDate): string {
+  return day.toLocaleString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+// "Tuesday".
+export function formatWeekday(day: Temporal.PlainDate): string {
+  return day.toLocaleString(locale, { weekday: "long" });
+}
+
 // "9:00 a.m.".
 export function formatTime(time: Temporal.PlainTime): string {
   return time.toLocaleString(locale, { hour: "numeric", minute: "2-digit" });
