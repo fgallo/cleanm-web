@@ -1,15 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cn";
-import type { ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { useState, type ReactNode } from "react";
+import { Link, useNavigate, useParams } from "react-router";
 import { Temporal } from "temporal-polyfill";
 
-import { isNotFound } from "@/api/client.ts";
+import { describeFailure, isNotFound } from "@/api/client.ts";
 import {
+  canBeDeleted,
+  deleteInvoice,
+  invoiceKeys,
   invoicePdfUrl,
   invoiceQueryOptions,
+  refreshInvoice,
   type Invoice,
 } from "@/api/invoices.ts";
+import { jobKeys } from "@/api/jobs.ts";
+import AskTwice from "@/components/ask-twice.tsx";
 import RequestFailed from "@/components/request-failed.tsx";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -103,17 +109,33 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
               ? "Due on receipt"
               : `Due ${day(invoice.dueDate)}`}
           </p>
+          {invoice.locked && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Paid in full, so it is closed: it can no longer be edited or
+              deleted while its payments cover the total.
+            </p>
+          )}
         </div>
-        {/* A link, not a request of this page: the browser opens the PDF
-            itself, in another tab. */}
-        <a
-          href={invoicePdfUrl(invoice.id)}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(buttonVariants({ variant: "outline" }))}
-        >
-          Open PDF
-        </a>
+        <div className="flex gap-2">
+          {!invoice.locked && (
+            <Link
+              to={`/invoices/${invoice.id}/edit`}
+              className={cn(buttonVariants({ variant: "outline" }))}
+            >
+              Edit
+            </Link>
+          )}
+          {/* A link, not a request of this page: the browser opens the PDF
+              itself, in another tab. */}
+          <a
+            href={invoicePdfUrl(invoice.id)}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(buttonVariants({ variant: "outline" }))}
+          >
+            Open PDF
+          </a>
+        </div>
       </div>
 
       <section className="mt-6">
@@ -234,7 +256,124 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
           <p className="mt-1 text-sm whitespace-pre-line">{invoice.notes}</p>
         </section>
       )}
+
+      {/* The API refuses both on an invoice paid in full. */}
+      {!invoice.locked && (
+        <>
+          <RefreshDetails invoice={invoice} />
+          <DeleteInvoice invoice={invoice} />
+        </>
+      )}
     </div>
+  );
+}
+
+// An invoice keeps its own copy of the client, the address and the
+// business, so correcting them elsewhere does not reach it. Copying them
+// again is asked twice: the copy it had is not kept.
+function RefreshDetails({ invoice }: { invoice: Invoice }) {
+  const queryClient = useQueryClient();
+  const [asking, setAsking] = useState(false);
+  const refresh = useMutation({
+    mutationFn: () => refreshInvoice(invoice.id),
+    onSuccess: (refreshed) => {
+      queryClient.setQueryData(invoiceKeys.detail(refreshed.id), refreshed);
+      setAsking(false);
+    },
+  });
+
+  return (
+    <section className="mt-8 border-t pt-4">
+      <h2 className="font-heading text-base font-medium">
+        Client and business details
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        The invoice prints the client, the address and the business as they were
+        when it was generated. Refreshing copies them again as they are now, for
+        an invoice issued with something wrong in them.
+      </p>
+      <AskTwice
+        label="Refresh details"
+        question="Replace what the invoice prints with the current details?"
+        confirmLabel="Yes, refresh"
+        cancelLabel="Keep them"
+        asking={asking}
+        pending={refresh.isPending}
+        onAsk={() => {
+          // What the previous refresh said goes with it.
+          refresh.reset();
+          setAsking(true);
+        }}
+        onConfirm={() => refresh.mutate()}
+        onCancel={() => {
+          setAsking(false);
+          refresh.reset();
+        }}
+      />
+      {refresh.isSuccess && (
+        <p role="status" className="mt-2 text-sm">
+          The invoice now prints the current details.
+        </p>
+      )}
+      {refresh.isError && (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          {describeFailure(refresh.error)}
+        </p>
+      )}
+    </section>
+  );
+}
+
+// Asked twice: the invoice cannot be brought back, and its number is not
+// given again. Only while nobody paid any of it.
+function DeleteInvoice({ invoice }: { invoice: Invoice }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [asking, setAsking] = useState(false);
+  const remove = useMutation({
+    mutationFn: () => deleteInvoice(invoice.id),
+    onSuccess: async () => {
+      // The job has no invoice now, on every list and on its own.
+      await queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      void navigate(`/calendar/${invoice.job.scheduledDate}`);
+    },
+  });
+
+  return (
+    <section className="mt-8 border-t pt-4">
+      <h2 className="font-heading text-base font-medium">Delete invoice</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Removes the invoice, and the visit can be invoiced again. Its number, #
+        {invoice.number}, is not given to another invoice.
+      </p>
+      {canBeDeleted(invoice) ? (
+        <AskTwice
+          label="Delete invoice"
+          question={`Delete invoice #${invoice.number}?`}
+          confirmLabel="Yes, delete"
+          cancelLabel="Keep it"
+          destructive
+          asking={asking}
+          pending={remove.isPending}
+          onAsk={() => setAsking(true)}
+          onConfirm={() => remove.mutate()}
+          onCancel={() => {
+            setAsking(false);
+            // What a refused attempt said goes with it.
+            remove.reset();
+          }}
+        />
+      ) : (
+        <p className="mt-2 text-sm">
+          It has payments, and an invoice with payments cannot be deleted.
+        </p>
+      )}
+      {remove.isError && (
+        <p role="alert" className="mt-2 text-sm text-destructive">
+          {describeFailure(remove.error)}
+        </p>
+      )}
+    </section>
   );
 }
 
