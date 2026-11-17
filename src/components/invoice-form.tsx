@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router";
 
 import { describeOutsideFields, issuesFor } from "@/api/client.ts";
@@ -36,10 +36,12 @@ const discountKindLabels: Record<DiscountKind, string> = {
 };
 
 // What the owner decides about an invoice: when it is issued and due, what
-// it is for, a discount and the notes. The item is picked, not typed, unless
-// it is none of the usual ones, and nothing else has to be written. The
-// price is not a field: it is the job's, and the discount is taken off it. Like the other forms, the page owns the
-// request and passes what the last attempt failed with.
+// it is for, a discount and the notes, for generating one and for editing
+// one. The item is picked, not typed, unless it is none of the usual ones,
+// and nothing else has to be written. The price is not a field here: a new
+// invoice takes the job's, and the page of one that exists adds the fields
+// that correct it. Like the other forms, the page owns the request and
+// passes what the last attempt failed with.
 export default function InvoiceForm({
   initial,
   subtotalCents,
@@ -48,16 +50,22 @@ export default function InvoiceForm({
   pending,
   error,
   onSubmit,
+  children,
 }: {
   // What the form starts from; what is typed afterwards is its own.
   initial: InvoiceDraft;
-  // What the discount is taken off: the price of the job.
-  subtotalCents: number;
+  // What the discount is taken off: the price of the job, or what the
+  // fields of the page come to, `null` while that cannot be told.
+  subtotalCents: number | null;
   submitLabel: string;
   cancelTo: string;
   pending: boolean;
   error: Error | null;
   onSubmit: (input: InvoiceInput) => void;
+  // Fields the page puts after the line and before the discount, inside
+  // the same form: what the invoice charges. The page keeps their state and
+  // adds it to what is submitted.
+  children?: ReactNode;
 }) {
   const [draft, setDraft] = useState(initial);
 
@@ -88,7 +96,10 @@ export default function InvoiceForm({
   };
   const formMessage =
     error === null ? null : describeOutsideFields(error, invoiceFieldNames);
-  const subtotal = formatMoney(subtotalCents);
+  const subtotal =
+    subtotalCents === null
+      ? "the subtotal"
+      : `the subtotal of ${formatMoney(subtotalCents)}`;
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md">
@@ -180,6 +191,7 @@ export default function InvoiceForm({
           </FieldDescription>
           <FieldError errors={issues.description} />
         </Field>
+        {children}
         <Field>
           <FieldLabel htmlFor="discountKind">Discount</FieldLabel>
           <NativeSelect
@@ -220,9 +232,11 @@ export default function InvoiceForm({
                 required
                 min="0.01"
                 max={
-                  draft.discountKind === "amount"
-                    ? centsToDollars(subtotalCents)
-                    : "100"
+                  draft.discountKind === "percentage"
+                    ? "100"
+                    : subtotalCents === null
+                      ? undefined
+                      : centsToDollars(subtotalCents)
                 }
                 step="0.01"
                 aria-invalid={issues.discount.length > 0}
@@ -232,8 +246,8 @@ export default function InvoiceForm({
               />
               <FieldDescription id="discount-description">
                 {draft.discountKind === "amount"
-                  ? `In dollars, off the ${subtotal} of the job, before tax.`
-                  : `Of the ${subtotal} of the job, before tax.`}
+                  ? `In dollars, off ${subtotal}, before tax.`
+                  : `Of ${subtotal}, before tax.`}
               </FieldDescription>
               <FieldError errors={issues.discount} />
             </Field>
