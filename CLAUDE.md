@@ -108,7 +108,13 @@ cookie, so every request to the API is sent with credentials. API conventions
   invoice's dates. "Open PDF" is a plain link to the API
   (`invoicePdfUrl` in `src/api/invoices.ts`), opened by the browser in
   another tab: the session cookie travels with a navigation, so the PDF is
-  not fetched by the page.
+  not fetched by the page. What changes the invoice is offered there until
+  it is paid in full (`locked`), and the page says so once it is: "Edit",
+  copying again what it keeps of the client, the address and the business
+  (`refreshInvoice`), and deleting it, which is left out while it has
+  payments (`canBeDeleted`). The last two ask twice, in place
+  (`src/components/ask-twice.tsx`); deleting leads to the day of the visit,
+  which can be invoiced again.
 - `src/pages/invoice-new.tsx` (`/jobs/:jobId/invoice/new`): the invoice of
   one job before it exists, where "Generate invoice" on a job of the day
   page leads. A page and not one click, because generating takes a number
@@ -125,6 +131,16 @@ cookie, so every request to the API is sent with credentials. API conventions
   `fixedDiscountCents` or `discountBasisPoints`, never both. The form starts
   as the API would make the invoice from the job alone: issued today in the
   organization's time zone, for the kind of cleaning the job is.
+- `src/pages/invoice-edit.tsx` (`/invoices/:invoiceId/edit`): the same form
+  for an invoice that exists, started from it (`toDraft`, which picks the
+  item again when it reads as a kind of cleaning). An invoice also lets what
+  it copied from the job be corrected, the day of the visit and the pricing:
+  the page keeps those (`PricingDraft`,
+  `src/components/invoice-pricing-fields.tsx`) and puts them inside the form
+  through `children`, because the discount is taken off what they come to
+  (`subtotalCents`). `updateInvoice` sends only what changed, like
+  `updateJob`: the API checks the rules between fields on the invoice as it
+  will be. An invoice paid in full gets no form.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, percentages, days and times read on screen (`en-CA` and CAD,
   like the API's invoice PDF, until the organization has a locale);
