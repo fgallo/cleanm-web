@@ -53,7 +53,15 @@ test("lists the jobs of a day with what each visit needs", async () => {
   expect(morning.getByText("Price").nextElementSibling?.textContent).toBe(
     "$135.00 at $45.00 an hour",
   );
-  expect(morning.getByText("Not invoiced")).toBeDefined();
+  // A scheduled visit with no invoice yet: one is on offer.
+  expect(morning.getByText("Invoice").nextElementSibling?.textContent).toBe(
+    "Not invoiced · Generate invoice",
+  );
+  expect(
+    morning
+      .getByRole("link", { name: "Generate invoice for Alice Example" })
+      .getAttribute("href"),
+  ).toBe(`/jobs/${aliceVisit.id}/invoice/new`);
   expect(
     morning.getByRole("link", { name: "Alice Example" }).getAttribute("href"),
   ).toBe(`/clients/${alice.id}`);
@@ -98,6 +106,29 @@ test("shows what the helper of each job is paid for an hour", async () => {
     within(cardOf("Bob Sample")).getByText("Helper").nextElementSibling
       ?.textContent,
   ).toBe("Carla Invented at $25.00 an hour");
+});
+
+test("offers no invoice for an estimate or for a job that was cancelled", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () =>
+        json(200, [
+          { ...aliceVisit, status: "estimated" },
+          { ...bobVisit, status: "cancelled", invoice: null },
+        ]),
+    }),
+  );
+  renderApp({ route: "/calendar/2026-11-17" });
+
+  await screen.findByRole("heading", { name: "Alice Example" });
+  for (const client of ["Alice Example", "Bob Sample"]) {
+    expect(
+      within(cardOf(client)).getByText("Invoice").nextElementSibling
+        ?.textContent,
+    ).toBe("Not invoiced");
+  }
+  expect(screen.queryByRole("link", { name: /Generate invoice/ })).toBeNull();
 });
 
 test("says when a day has no jobs and moves to the days around it", async () => {
