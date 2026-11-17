@@ -172,7 +172,7 @@ test("takes an amount off in cents, up to the price of the job", async () => {
     "135.00",
   );
   expect(
-    screen.getByText("In dollars, off the $135.00 of the job, before tax."),
+    screen.getByText("In dollars, off the subtotal of $135.00, before tax."),
   ).toBeDefined();
   fill("Amount off", "19.99");
   generate();
