@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
-import { apiUrl, get } from "./client.ts";
-import type { JobStatus } from "./jobs.ts";
+import { apiUrl, get, post } from "./client.ts";
+import type { Job, JobStatus } from "./jobs.ts";
 
 export const paymentMethods = ["e_transfer", "cash"] as const;
 export type PaymentMethod = (typeof paymentMethods)[number];
@@ -18,7 +18,9 @@ export type Invoice = {
   issueDate: string;
   // `null` means due on receipt.
   dueDate: string | null;
-  description: string;
+  // The line it prints: what it is for, and what may be written next to it.
+  item: string;
+  description: string | null;
   serviceDate: string;
   // When `fixedPriceCents` is null, the subtotal is hourly rate x duration.
   durationMinutes: number;
@@ -103,4 +105,38 @@ export function invoiceQueryOptions(id: string) {
 // travels with a navigation to the API.
 export function invoicePdfUrl(id: string): string {
   return `${apiUrl}/invoices/${id}/pdf`;
+}
+
+// What the owner decides when an invoice is generated: its dates, its line,
+// a discount and the notes. The pricing is the job's and the tax the
+// organization's, and the API copies both. A discount is an amount or a
+// share of the subtotal, never both.
+export type InvoiceInput = {
+  issueDate: string;
+  dueDate: string | null;
+  item: string;
+  description: string | null;
+  fixedDiscountCents: number | null;
+  discountBasisPoints: number | null;
+  discountDescription: string | null;
+  notes: string | null;
+};
+
+// A visit is invoiced once, before or after it happens: the API refuses a
+// job that is only an estimate, one that was cancelled and one that already
+// has an invoice.
+export function canBeInvoiced(job: Pick<Job, "status" | "invoice">): boolean {
+  return (
+    job.invoice === null &&
+    (job.status === "scheduled" || job.status === "completed")
+  );
+}
+
+// POST /invoices: the invoice of one job. It takes the organization's next
+// number, which no other invoice gets afterwards, even if this one is
+// deleted.
+export function createInvoice(
+  input: InvoiceInput & { jobId: string },
+): Promise<Invoice> {
+  return post<Invoice>("/invoices", input);
 }

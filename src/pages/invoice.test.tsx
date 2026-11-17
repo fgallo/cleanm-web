@@ -47,7 +47,9 @@ test("shows an invoice from the day of its visit, as its PDF prints it", async (
   // Half of it came in.
   expect(screen.getByText("Partly paid")).toBeDefined();
   expect(
-    screen.getByText("Issued Nov 17, 2026 · Due on receipt"),
+    screen.getByText(
+      "Issued Nov 17, 2026 · Service on Nov 17, 2026 · Due on receipt",
+    ),
   ).toBeDefined();
 
   // Who it bills, as the invoice holds it.
@@ -61,10 +63,18 @@ test("shows an invoice from the day of its visit, as its PDF prints it", async (
   expect(billTo.getByText("78 Invented St")).toBeDefined();
   expect(billTo.getByText("Toronto, ON M5V 2T6")).toBeDefined();
 
+  // The line is the item and what may be written next to it, here nothing.
+  expect(rowOf("Items")).toEqual([
+    "Items",
+    "Description",
+    "Quantity",
+    "Price",
+    "Amount",
+  ]);
   // An agreed price is one visit at that price.
   expect(rowOf("Move-out cleaning")).toEqual([
     "Move-out cleaning",
-    "Nov 17, 2026",
+    "—",
     "1",
     "$200.00",
     "$200.00",
@@ -102,7 +112,10 @@ test("shows an invoice by the hour with a percentage off, paid in full", async (
   const hourly: Invoice = {
     ...bobInvoice,
     dueDate: "2026-12-01",
-    description: "Deep cleaning",
+    item: "Deep cleaning",
+    description: "Oven included",
+    // Invoiced three days after the visit.
+    serviceDate: "2026-11-14",
     fixedPriceCents: null,
     subtotalCents: 12500,
     discountBasisPoints: 1000,
@@ -140,11 +153,13 @@ test("shows an invoice by the hour with a percentage off, paid in full", async (
   await screen.findByRole("heading", { name: "Invoice #12" });
   expect(screen.getByText("Paid", { selector: "span" })).toBeDefined();
   expect(
-    screen.getByText("Issued Nov 17, 2026 · Due Dec 1, 2026"),
+    screen.getByText(
+      "Issued Nov 17, 2026 · Service on Nov 14, 2026 · Due Dec 1, 2026",
+    ),
   ).toBeDefined();
   expect(rowOf("Deep cleaning")).toEqual([
     "Deep cleaning",
-    "Nov 17, 2026",
+    "Oven included",
     "2.5 h",
     "$50.00",
     "$125.00",

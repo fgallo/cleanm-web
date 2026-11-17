@@ -72,7 +72,7 @@ function day(date: string): string {
 }
 
 // The invoice as the API keeps it, line by line as its PDF prints it: who
-// is billed, the visit, the amounts and what was paid. Everything here is
+// is billed, the item, the amounts and what was paid. Everything here is
 // the invoice's own copy, not the client or the job as they are today.
 function InvoiceView({ invoice }: { invoice: Invoice }) {
   const { billTo } = invoice;
@@ -97,7 +97,8 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
             <PaidBadge invoice={invoice} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Issued {day(invoice.issueDate)} ·{" "}
+            Issued {day(invoice.issueDate)} · Service on{" "}
+            {day(invoice.serviceDate)} ·{" "}
             {invoice.dueDate === null
               ? "Due on receipt"
               : `Due ${day(invoice.dueDate)}`}
@@ -141,8 +142,8 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
       <Table className="mt-6">
         <TableHeader>
           <TableRow>
+            <TableHead>Items</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Date</TableHead>
             <TableHead className="text-right">Quantity</TableHead>
             <TableHead className="text-right">Price</TableHead>
             <TableHead className="text-right">Amount</TableHead>
@@ -150,8 +151,12 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
         </TableHeader>
         <TableBody>
           <TableRow>
-            <TableCell>{invoice.description}</TableCell>
-            <TableCell>{day(invoice.serviceDate)}</TableCell>
+            <TableCell>{invoice.item}</TableCell>
+            <TableCell>
+              {invoice.description ?? (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </TableCell>
             {/* By the hour, or one visit at the price agreed. */}
             <TableCell className="text-right">
               {hourly ? formatHours(invoice.durationMinutes) : "1"}
