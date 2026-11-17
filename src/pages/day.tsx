@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import { Temporal } from "temporal-polyfill";
 
+import { canBeInvoiced } from "@/api/invoices.ts";
 import { jobsQueryOptions, type Job, type JobStatus } from "@/api/jobs.ts";
 import RequestFailed from "@/components/request-failed.tsx";
 import { Badge } from "@/components/ui/badge";
@@ -193,15 +194,31 @@ function JobCard({ job }: { job: Job }) {
             </span>
           </Detail>
           <Detail label="Invoice">
-            {job.invoice === null ? (
-              "Not invoiced"
-            ) : (
+            {job.invoice !== null ? (
               <Link
                 to={`/invoices/${job.invoice.id}`}
                 className="underline hover:text-muted-foreground"
               >
                 #{job.invoice.number}
               </Link>
+            ) : (
+              <>
+                Not invoiced
+                {/* Only a visit gets one: not an estimate, not a job that
+                    was cancelled. */}
+                {canBeInvoiced(job) && (
+                  <>
+                    {" · "}
+                    <Link
+                      to={`/jobs/${job.id}/invoice/new`}
+                      aria-label={`Generate invoice for ${job.client.name}`}
+                      className="underline hover:text-muted-foreground"
+                    >
+                      Generate invoice
+                    </Link>
+                  </>
+                )}
+              </>
             )}
           </Detail>
           {job.notes !== null && <Detail label="Notes">{job.notes}</Detail>}

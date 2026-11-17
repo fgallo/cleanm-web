@@ -12,6 +12,7 @@ import HelperEditPage from "@/pages/helper-edit.tsx";
 import HelperNewPage from "@/pages/helper-new.tsx";
 import HelpersPage from "@/pages/helpers.tsx";
 import HomePage from "@/pages/home.tsx";
+import InvoiceNewPage from "@/pages/invoice-new.tsx";
 import InvoicePage from "@/pages/invoice.tsx";
 import JobEditPage from "@/pages/job-edit.tsx";
 import JobNewPage from "@/pages/job-new.tsx";
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="invoices/:invoiceId" element={<InvoicePage />} />
           <Route path="jobs/new" element={<JobNewPage />} />
           <Route path="jobs/:jobId/edit" element={<JobEditPage />} />
+          <Route path="jobs/:jobId/invoice/new" element={<InvoiceNewPage />} />
           <Route path="recurring-series" element={<RecurringSeriesPage />} />
           <Route
             path="recurring-series/new"
