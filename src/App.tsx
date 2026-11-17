@@ -12,6 +12,7 @@ import HelperEditPage from "@/pages/helper-edit.tsx";
 import HelperNewPage from "@/pages/helper-new.tsx";
 import HelpersPage from "@/pages/helpers.tsx";
 import HomePage from "@/pages/home.tsx";
+import InvoiceEditPage from "@/pages/invoice-edit.tsx";
 import InvoiceNewPage from "@/pages/invoice-new.tsx";
 import InvoicePage from "@/pages/invoice.tsx";
 import JobEditPage from "@/pages/job-edit.tsx";
@@ -38,6 +39,10 @@ export default function App() {
           <Route path="helpers/new" element={<HelperNewPage />} />
           <Route path="helpers/:helperId/edit" element={<HelperEditPage />} />
           <Route path="invoices/:invoiceId" element={<InvoicePage />} />
+          <Route
+            path="invoices/:invoiceId/edit"
+            element={<InvoiceEditPage />}
+          />
           <Route path="jobs/new" element={<JobNewPage />} />
           <Route path="jobs/:jobId/edit" element={<JobEditPage />} />
           <Route path="jobs/:jobId/invoice/new" element={<InvoiceNewPage />} />
