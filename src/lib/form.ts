@@ -25,3 +25,9 @@ export function hoursToMinutes(value: string): number {
 export function minutesToHours(minutes: number): string {
   return String(Math.round((minutes / 60) * 100) / 100);
 }
+
+// A percentage is typed as "10" or "12.5" and travels as basis points, a
+// hundred to the percent.
+export function percentToBasisPoints(value: string): number {
+  return Math.round(Number(value) * 100);
+}
