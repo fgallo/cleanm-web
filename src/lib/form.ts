@@ -15,6 +15,15 @@ export function centsToDollars(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
+// An amount that may not be set: blank on the form, `null` for the API.
+export function optionalCentsToDollars(cents: number | null): string {
+  return cents === null ? "" : centsToDollars(cents);
+}
+
+export function optionalDollarsToCents(value: string): number | null {
+  return value.trim() === "" ? null : dollarsToCents(value);
+}
+
 // A duration is typed in hours ("2.5") and travels as minutes.
 export function hoursToMinutes(value: string): number {
   return Math.round(Number(value) * 60);
@@ -30,4 +39,9 @@ export function minutesToHours(minutes: number): string {
 // hundred to the percent.
 export function percentToBasisPoints(value: string): number {
   return Math.round(Number(value) * 100);
+}
+
+// "10" or "12.5": the field gives back the basis points it was filled from.
+export function basisPointsToPercent(basisPoints: number): string {
+  return String(basisPoints / 100);
 }

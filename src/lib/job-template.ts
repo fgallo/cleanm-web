@@ -5,6 +5,8 @@ import {
   emptyAsNull,
   hoursToMinutes,
   minutesToHours,
+  optionalCentsToDollars,
+  optionalDollarsToCents,
 } from "@/lib/form.ts";
 
 // A job template while it is typed: hours and dollars as text, blank for
@@ -74,20 +76,14 @@ export function fromDraft(draft: TemplateDraft): JobTemplate {
 }
 
 // What charging by the hour comes to, with the same arithmetic as the API:
-// rate x duration, rounded to the cent. Unknown while either is blank.
-export function hourlyPriceCents(draft: TemplateDraft): number | null {
+// rate x duration, rounded to the cent. Unknown while either is blank. An
+// invoice charges the same way, so its form asks here too.
+export function hourlyPriceCents(
+  draft: Pick<TemplateDraft, "hours" | "hourlyRate">,
+): number | null {
   return draft.hours.trim() === "" || draft.hourlyRate.trim() === ""
     ? null
     : Math.round(
         (dollarsToCents(draft.hourlyRate) * hoursToMinutes(draft.hours)) / 60,
       );
-}
-
-// An amount that may not be set: blank on the form, `null` for the API.
-function optionalCentsToDollars(cents: number | null): string {
-  return cents === null ? "" : centsToDollars(cents);
-}
-
-function optionalDollarsToCents(value: string): number | null {
-  return value.trim() === "" ? null : dollarsToCents(value);
 }
