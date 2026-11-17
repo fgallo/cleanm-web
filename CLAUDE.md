@@ -103,10 +103,28 @@ cookie, so every request to the API is sent with credentials. API conventions
   the API, where the number on a job of the day page leads. It shows the
   invoice's own copy (`billTo`, the pricing, the tax), never the client or
   the job as they are now, and names its lines as the API's PDF does
-  (`src/lib/invoice-labels.ts`). "Open PDF" is a plain link to the API
+  (`src/lib/invoice-labels.ts`). Its line is the item and the description
+  that may be written next to it; the day of the visit reads with the
+  invoice's dates. "Open PDF" is a plain link to the API
   (`invoicePdfUrl` in `src/api/invoices.ts`), opened by the browser in
   another tab: the session cookie travels with a navigation, so the PDF is
   not fetched by the page.
+- `src/pages/invoice-new.tsx` (`/jobs/:jobId/invoice/new`): the invoice of
+  one job before it exists, where "Generate invoice" on a job of the day
+  page leads. A page and not one click, because generating takes a number
+  that is never given again. It is offered for a job the API would invoice
+  (`canBeInvoiced` in `src/api/invoices.ts`: scheduled or completed, with no
+  invoice yet), and the page says why for any other. The form
+  (`src/components/invoice-form.tsx`) has what the owner decides: the dates,
+  the item, a discount and the notes; the price is the job's. As little as
+  possible is typed: the item is picked from the kinds of cleaning
+  (`invoiceItems` in `src/lib/invoice-labels.ts`, sent as the text they
+  print) and written out only for "Other…", and the description next to it
+  is optional. A discount is one number and what it counts, dollars or a
+  percentage (`InvoiceDraft` in `src/lib/invoice-draft.ts`), sent as
+  `fixedDiscountCents` or `discountBasisPoints`, never both. The form starts
+  as the API would make the invoice from the job alone: issued today in the
+  organization's time zone, for the kind of cleaning the job is.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, percentages, days and times read on screen (`en-CA` and CAD,
   like the API's invoice PDF, until the organization has a locale);
