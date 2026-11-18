@@ -43,6 +43,14 @@ export function formatDate(day: Temporal.PlainDate): string {
   });
 }
 
+// "November 2026". Through its first day: `toLocaleString` refuses a year
+// and month of the ISO calendar, which is what a YYYY-MM is.
+export function formatMonth(month: Temporal.PlainYearMonth): string {
+  return month
+    .toPlainDate({ day: 1 })
+    .toLocaleString(locale, { year: "numeric", month: "long" });
+}
+
 // "Tuesday".
 export function formatWeekday(day: Temporal.PlainDate): string {
   return day.toLocaleString(locale, { weekday: "long" });
