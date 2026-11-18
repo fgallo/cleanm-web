@@ -104,8 +104,11 @@ function EditForm({ invoice }: { invoice: Invoice }) {
     mutationFn: (input: InvoiceInput) =>
       updateInvoice(invoice, { ...input, ...fromPricingDraft(pricing) }),
     onSuccess: (updated) => {
-      // Its page shows the answer, with the amounts the API derived.
+      // Its page shows the answer, with the amounts the API derived. The
+      // lists are asked for again: of its month, and of the one it left
+      // when the issue date changed.
       queryClient.setQueryData(invoiceKeys.detail(updated.id), updated);
+      void queryClient.invalidateQueries({ queryKey: invoiceKeys.ranges() });
       void navigate(invoicePath);
     },
   });
