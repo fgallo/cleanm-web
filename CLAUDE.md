@@ -141,12 +141,25 @@ cookie, so every request to the API is sent with credentials. API conventions
   (`subtotalCents`). `updateInvoice` sends only what changed, like
   `updateJob`: the API checks the rules between fields on the invoice as it
   will be. An invoice paid in full gets no form.
+- `src/pages/invoices.tsx` (`/invoices?month=YYYY-MM`): the invoices issued
+  in one month, the latest first, where "Invoices" on the menu leads; each
+  number leads to its invoice. The month is in the address, so the arrows
+  are links and a month can be returned to (`parseMonth` and `monthRange`
+  in `src/lib/dates.ts`); without one, or with anything that is not a
+  month, it is the month the organization is in. A row reads the invoice's
+  own copy (`billTo`, the item) with its total, what is still due and
+  whether it is paid (`src/components/invoice-paid-badge.tsx`, shared with
+  the invoice page), and the footer adds up the month. No invoice is
+  generated there: it is the invoice of a job, generated on the page of its
+  day. The pages that generate, change or delete an invoice ask for these
+  lists again (`invoiceKeys.ranges()`), not for the invoice that was
+  deleted, which its page still reads.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, percentages, days and times read on screen (`en-CA` and CAD,
   like the API's invoice PDF, until the organization has a locale);
-  `dates.ts` reads a YYYY-MM-DD from a URL (`parseDay`); `job-labels.ts`
-  names the API's service types and statuses; `series-labels.ts` says how
-  the rule of a series reads (`repeatsLabel`).
+  `dates.ts` reads a day or a month from a URL (`parseDay`, `parseMonth`);
+  `job-labels.ts` names the API's service types and statuses;
+  `series-labels.ts` says how the rule of a series reads (`repeatsLabel`).
 - `src/auth/`: `RequireSession`, the layout route around every signed-in page
   (`GET /auth/me`, redirect to `/sign-in`), and `useSession()`.
 - `src/pages/`: one component per route; `src/App.tsx` lists the routes.
