@@ -43,7 +43,10 @@ cookie, so every request to the API is sent with credentials. API conventions
   `src/api/client.ts`) and any other failure below the fields
   (`describeOutsideFields`). A field left blank is sent as `null`
   (`emptyAsNull` in `src/lib/form.ts`). Selects are the shadcn
-  `native-select`.
+  `native-select`. A date that may be left blank is
+  `src/components/optional-date-input.tsx`, the date field with its own
+  "Clear" next to it: browsers do not agree on how a date field is emptied,
+  and one typed only in part has no value without being blank.
 - A job and a recurring series share the job template (`JobTemplate` in
   `src/api/jobs.ts`, as in the API): start time, hours, service, prices,
   helper and notes. Its fields are one controlled component
