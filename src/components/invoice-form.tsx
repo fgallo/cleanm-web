@@ -3,6 +3,7 @@ import { Link } from "react-router";
 
 import { describeOutsideFields, issuesFor } from "@/api/client.ts";
 import type { InvoiceInput } from "@/api/invoices.ts";
+import OptionalDateInput from "@/components/optional-date-input.tsx";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
@@ -119,14 +120,14 @@ export default function InvoiceForm({
           </Field>
           <Field data-invalid={issues.dueDate.length > 0}>
             <FieldLabel htmlFor="dueDate">Due date</FieldLabel>
-            <Input
+            <OptionalDateInput
               id="dueDate"
-              type="date"
               min={draft.issueDate}
               aria-invalid={issues.dueDate.length > 0}
               aria-describedby="dueDate-description"
               value={draft.dueDate}
-              onChange={(event) => set("dueDate", event.target.value)}
+              onValueChange={(value) => set("dueDate", value)}
+              clearLabel="Clear due date"
             />
             <FieldDescription id="dueDate-description">
               Blank is due on receipt.

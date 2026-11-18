@@ -79,6 +79,8 @@ test("edits the template of a series from the list and sends only what changed",
   expect(screen.queryByLabelText("Starts")).toBeNull();
   // The form starts from the series, in hours and dollars.
   expect(valueOf("Ends")).toBe("");
+  // Nothing to clear on a series that goes on.
+  expect(screen.queryByRole("button", { name: "Clear end date" })).toBeNull();
   expect(valueOf("Start time")).toBe("09:00");
   expect(valueOf("Hours")).toBe("3");
   expect(valueOf("Service")).toBe("regular");
@@ -164,7 +166,8 @@ test("resumes an ended series without sending its inactive helper again", async 
   expect(
     screen.getByRole("option", { name: "Dan Former (inactive)" }),
   ).toBeDefined();
-  fill("Ends", "");
+  click("Clear end date");
+  expect(valueOf("Ends")).toBe("");
   save();
 
   expect(

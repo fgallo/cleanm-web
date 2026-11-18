@@ -184,7 +184,9 @@ test("clears what is left blank and removes a discount with its description", as
 
   await screen.findByLabelText("Issue date");
   expect(valueOf("Due date")).toBe("2026-12-01");
-  fill("Due date", "");
+  // Back to due on receipt, with the button next to the field.
+  fireEvent.click(screen.getByRole("button", { name: "Clear due date" }));
+  expect(valueOf("Due date")).toBe("");
   fill("Service date", "2026-11-16");
   fill("Discount", "none");
   fill("Notes", "");

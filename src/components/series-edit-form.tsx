@@ -9,6 +9,7 @@ import {
   type SeriesChanges,
 } from "@/api/recurring-series.ts";
 import JobTemplateFields from "@/components/job-template-fields.tsx";
+import OptionalDateInput from "@/components/optional-date-input.tsx";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
@@ -17,7 +18,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import { fromDraft, templateFieldNames, toDraft } from "@/lib/job-template.ts";
 
 // The names the API gives these fields in its issues.
@@ -64,14 +64,14 @@ export default function SeriesEditForm({
       <FieldGroup>
         <Field data-invalid={endDateIssues.length > 0}>
           <FieldLabel htmlFor="endDate">Ends</FieldLabel>
-          <Input
+          <OptionalDateInput
             id="endDate"
-            type="date"
             min={series.startDate}
             aria-invalid={endDateIssues.length > 0}
             aria-describedby="endDate-description"
             value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
+            onValueChange={setEndDate}
+            clearLabel="Clear end date"
           />
           <FieldDescription id="endDate-description">
             The last day a visit can fall on: the visits after it are removed.
