@@ -106,8 +106,10 @@ function NewForm({ job }: { job: Job }) {
     onSuccess: (invoice) => {
       // Its page starts from the answer.
       queryClient.setQueryData(invoiceKeys.detail(invoice.id), invoice);
-      // The job has an invoice now, on every list and on its own.
+      // The job has an invoice now, on every list and on its own, and the
+      // month it was issued in has one more.
       void queryClient.invalidateQueries({ queryKey: jobKeys.all });
+      void queryClient.invalidateQueries({ queryKey: invoiceKeys.ranges() });
       void navigate(`/invoices/${invoice.id}`);
     },
   });

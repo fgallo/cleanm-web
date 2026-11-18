@@ -16,8 +16,8 @@ import {
 } from "@/api/invoices.ts";
 import { jobKeys } from "@/api/jobs.ts";
 import AskTwice from "@/components/ask-twice.tsx";
+import InvoicePaidBadge from "@/components/invoice-paid-badge.tsx";
 import RequestFailed from "@/components/request-failed.tsx";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
@@ -100,7 +100,7 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
             <h1 className="font-heading text-xl font-semibold">
               Invoice #{invoice.number}
             </h1>
-            <PaidBadge invoice={invoice} />
+            <InvoicePaidBadge invoice={invoice} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Issued {day(invoice.issueDate)} · Service on{" "}
@@ -278,6 +278,8 @@ function RefreshDetails({ invoice }: { invoice: Invoice }) {
     mutationFn: () => refreshInvoice(invoice.id),
     onSuccess: (refreshed) => {
       queryClient.setQueryData(invoiceKeys.detail(refreshed.id), refreshed);
+      // A list reads who the invoice bills.
+      void queryClient.invalidateQueries({ queryKey: invoiceKeys.ranges() });
       setAsking(false);
     },
   });
@@ -333,7 +335,10 @@ function DeleteInvoice({ invoice }: { invoice: Invoice }) {
   const remove = useMutation({
     mutationFn: () => deleteInvoice(invoice.id),
     onSuccess: async () => {
-      // The job has no invoice now, on every list and on its own.
+      // The job has no invoice now, on every list and on its own, and its
+      // month has one less. Only the lists of invoices are asked for again:
+      // this page still reads the one that is gone.
+      void queryClient.invalidateQueries({ queryKey: invoiceKeys.ranges() });
       await queryClient.invalidateQueries({ queryKey: jobKeys.all });
       void navigate(`/calendar/${invoice.job.scheduledDate}`);
     },
@@ -374,18 +379,6 @@ function DeleteInvoice({ invoice }: { invoice: Invoice }) {
         </p>
       )}
     </section>
-  );
-}
-
-// Paid once the payments cover the total (brief, design rule 3).
-function PaidBadge({ invoice }: { invoice: Invoice }) {
-  if (invoice.paid) {
-    return <Badge>Paid</Badge>;
-  }
-  return invoice.paidCents === 0 ? (
-    <Badge variant="outline">Unpaid</Badge>
-  ) : (
-    <Badge variant="secondary">Partly paid</Badge>
   );
 }
 
