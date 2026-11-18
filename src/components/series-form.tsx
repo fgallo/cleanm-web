@@ -6,6 +6,7 @@ import { describeOutsideFields, issuesFor } from "@/api/client.ts";
 import type { Helper } from "@/api/helpers.ts";
 import type { SeriesInput, SeriesRule } from "@/api/recurring-series.ts";
 import JobTemplateFields from "@/components/job-template-fields.tsx";
+import OptionalDateInput from "@/components/optional-date-input.tsx";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
@@ -182,14 +183,14 @@ export default function SeriesForm({
           </Field>
           <Field data-invalid={issues.endDate.length > 0}>
             <FieldLabel htmlFor="endDate">Ends</FieldLabel>
-            <Input
+            <OptionalDateInput
               id="endDate"
-              type="date"
               min={startDate === "" ? undefined : startDate}
               aria-invalid={issues.endDate.length > 0}
               aria-describedby="endDate-description"
               value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
+              onValueChange={setEndDate}
+              clearLabel="Clear end date"
             />
             <FieldDescription id="endDate-description">
               Blank keeps the series going.

@@ -89,6 +89,13 @@ test("adds a series every two weeks from the list", async () => {
   fill("Hours", "3");
   fill("Hourly rate", "45");
   fill("Helper", carla.id);
+  // An end picked and taken back: the way to blank is next to the field,
+  // whatever the browser's own picker offers.
+  expect(screen.queryByRole("button", { name: "Clear end date" })).toBeNull();
+  fill("Ends", "2027-04-19");
+  fireEvent.click(screen.getByRole("button", { name: "Clear end date" }));
+  expect(valueOf("Ends")).toBe("");
+  expect(screen.queryByRole("button", { name: "Clear end date" })).toBeNull();
   add();
 
   // Back on the list, which shows the series.
