@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { apiUrl, del, get, patch, post } from "./client.ts";
-import type { Job, JobStatus } from "./jobs.ts";
+import type { DateRange, Job, JobStatus } from "./jobs.ts";
 
 export const paymentMethods = ["e_transfer", "cash"] as const;
 export type PaymentMethod = (typeof paymentMethods)[number];
@@ -90,8 +90,23 @@ export type Invoice = {
 
 export const invoiceKeys = {
   all: ["invoices"] as const,
+  // Every list of invoices, whatever its days: what a change to one invoice
+  // makes stale.
+  ranges: () => [...invoiceKeys.all, "range"] as const,
+  range: ({ from, to }: DateRange) =>
+    [...invoiceKeys.ranges(), from, to] as const,
   detail: (id: string) => [...invoiceKeys.all, "detail", id] as const,
 };
+
+// GET /invoices?from=&to=: the invoices issued between two days, both
+// included, the latest first. Each comes whole, as its own page reads it.
+export function invoicesQueryOptions(range: DateRange) {
+  return queryOptions({
+    queryKey: invoiceKeys.range(range),
+    queryFn: () =>
+      get<Invoice[]>(`/invoices?from=${range.from}&to=${range.to}`),
+  });
+}
 
 export function invoiceQueryOptions(id: string) {
   return queryOptions({
