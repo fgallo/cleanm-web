@@ -5,7 +5,12 @@ import { Link, useParams } from "react-router";
 import { Temporal } from "temporal-polyfill";
 
 import { canBeInvoiced } from "@/api/invoices.ts";
-import { jobsQueryOptions, type Job, type JobStatus } from "@/api/jobs.ts";
+import {
+  jobsQueryOptions,
+  type AssignedHelper,
+  type Job,
+  type JobStatus,
+} from "@/api/jobs.ts";
 import RequestFailed from "@/components/request-failed.tsx";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -14,14 +19,20 @@ import { cityLine } from "@/lib/address.ts";
 import { parseDay } from "@/lib/dates.ts";
 import {
   formatDay,
+  formatDuration,
   formatHours,
   formatMoney,
   formatTime,
 } from "@/lib/format.ts";
-import { jobStatusLabels, serviceTypeLabels } from "@/lib/job-labels.ts";
+import {
+  jobStatusLabels,
+  ownerLabel,
+  peopleLabel,
+  serviceTypeLabels,
+} from "@/lib/job-labels.ts";
 
 // The jobs of one day, each with what the visit needs: where it is, what
-// kind of cleaning, who helps and what it costs.
+// kind of cleaning, who does it and what it costs.
 export default function DayPage() {
   const { date } = useParams();
   if (date === undefined) {
@@ -122,13 +133,9 @@ const statusVariants: Record<
 
 function JobCard({ job }: { job: Job }) {
   const start = Temporal.PlainTime.from(job.startTime);
-  const end = start.add({ minutes: job.durationMinutes });
-  // What the helper is paid for an hour of this job: the rate the job
-  // carries, otherwise their usual one. Unknown while neither is set.
-  const helperRateCents =
-    job.helper === null
-      ? null
-      : (job.helperHourlyRateCents ?? job.helper.hourlyRateCents);
+  // The visit lasts the time at the house, not the hours of cleaning: two
+  // people are done in half of them.
+  const end = start.add({ minutes: job.onSiteMinutes });
 
   return (
     <Card size="sm" className={cn(job.status === "cancelled" && "opacity-60")}>
@@ -172,18 +179,33 @@ function JobCard({ job }: { job: Job }) {
         )}
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
           <Detail label="Service">{serviceTypeLabels[job.serviceType]}</Detail>
-          <Detail label="Helper">
-            {job.helper?.name ?? "No helper"}
-            {helperRateCents !== null && (
+          <Detail label="Who">
+            {!job.ownerWorks && job.helpers.length === 0 ? (
+              "Nobody assigned"
+            ) : (
+              <ul>
+                {job.ownerWorks && <li>{ownerLabel}</li>}
+                {job.helpers.map((assigned) => (
+                  <li key={assigned.helper.id}>
+                    <AssignedHelperLine assigned={assigned} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Detail>
+          <Detail label="Hours">
+            {formatHours(job.durationMinutes)}
+            {/* One person is at the house for the hours of cleaning. */}
+            {job.people > 1 && (
               <>
                 {" "}
                 <span className="text-muted-foreground">
-                  at {formatMoney(helperRateCents)} an hour
+                  shared by {peopleLabel(job.people)},{" "}
+                  {formatDuration(job.onSiteMinutes)} at the house
                 </span>
               </>
             )}
           </Detail>
-          <Detail label="Hours">{formatHours(job.durationMinutes)}</Detail>
           <Detail label="Price">
             {formatMoney(job.priceCents)}{" "}
             <span className="text-muted-foreground">
@@ -225,6 +247,28 @@ function JobCard({ job }: { job: Job }) {
         </dl>
       </CardContent>
     </Card>
+  );
+}
+
+// A helper of the job with what they are paid: the rate the job has for
+// them, otherwise their usual one, and what it comes to for the time at
+// the house. Only the name while neither rate is set.
+function AssignedHelperLine({ assigned }: { assigned: AssignedHelper }) {
+  const rateCents = assigned.hourlyRateCents ?? assigned.helper.hourlyRateCents;
+  return (
+    <>
+      {assigned.helper.name}
+      {rateCents !== null && (
+        <>
+          {" "}
+          <span className="text-muted-foreground">
+            at {formatMoney(rateCents)} an hour
+            {assigned.payCents !== null &&
+              `, ${formatMoney(assigned.payCents)} for the job`}
+          </span>
+        </>
+      )}
+    </>
   );
 }
 

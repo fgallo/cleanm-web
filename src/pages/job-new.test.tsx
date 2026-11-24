@@ -12,8 +12,8 @@ import {
   bobCottage,
   carla,
   clients,
+  doneBy,
   helpers,
-  onJob,
   session,
 } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
@@ -40,17 +40,19 @@ function optionsOf(label: string): (string | null)[] {
 }
 
 test("adds a job to a day, at a property of the client chosen", async () => {
-  const created: Job = {
-    ...aliceVisit,
-    id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d32",
-    scheduledDate: "2026-11-18",
-    startTime: "14:00:00",
-    durationMinutes: 150,
-    serviceType: "deep",
-    priceCents: 11250,
-    helper: onJob(carla),
-    notes: "First visit.",
-  };
+  const created: Job = doneBy(
+    {
+      ...aliceVisit,
+      id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d32",
+      scheduledDate: "2026-11-18",
+      startTime: "14:00:00",
+      durationMinutes: 150,
+      serviceType: "deep",
+      priceCents: 11250,
+      notes: "First visit.",
+    },
+    [carla],
+  );
   let saved = false;
   const requests = mockApi(
     routes({
@@ -78,6 +80,14 @@ test("adds a job to a day, at a property of the client chosen", async () => {
   expect(valueOf("Hourly rate")).toBe("");
   // No amount to show before there are hours and a rate.
   expect(screen.getByText("Blank charges by the hour.")).toBeDefined();
+  // The owner alone until someone else is ticked, and no time at the house
+  // before there are hours.
+  expect(
+    screen.getByRole<HTMLInputElement>("checkbox", { name: "Owner" }).checked,
+  ).toBe(true);
+  expect(
+    screen.getByText("Hours of cleaning, shared by who does the job."),
+  ).toBeDefined();
   expect(optionsOf("Property")).toEqual(["Choose a client first"]);
 
   fill("Client", alice.id);
@@ -97,7 +107,9 @@ test("adds a job to a day, at a property of the client chosen", async () => {
   fill("Service", "deep");
   fill("Hourly rate", "45");
   expect(screen.getByText("Blank charges by the hour: $112.50.")).toBeDefined();
-  fill("Helper", carla.id);
+  expect(screen.getByText("1 person: 2 h 30 min at the house.")).toBeDefined();
+  fireEvent.click(screen.getByRole("checkbox", { name: "Carla Invented" }));
+  expect(screen.getByText("2 people: 1 h 15 min at the house.")).toBeDefined();
   fill("Notes about the job", "First visit.");
   fireEvent.click(screen.getByRole("button", { name: "Add job" }));
 
@@ -106,7 +118,7 @@ test("adds a job to a day, at a property of the client chosen", async () => {
       name: "Wednesday, November 18, 2026",
     }),
   ).toBeDefined();
-  expect(await screen.findByText("2:00 p.m. – 4:30 p.m.")).toBeDefined();
+  expect(await screen.findByText("2:00 p.m. – 3:15 p.m.")).toBeDefined();
   expect(requests.find((r) => r.method === "POST")?.body).toEqual({
     propertyId: aliceUnit.id,
     status: "scheduled",
@@ -116,8 +128,8 @@ test("adds a job to a day, at a property of the client chosen", async () => {
     serviceType: "deep",
     hourlyRateCents: 4500,
     fixedPriceCents: null,
-    helperId: carla.id,
-    helperHourlyRateCents: null,
+    ownerWorks: true,
+    helpers: [{ helperId: carla.id, hourlyRateCents: null }],
     notes: "First visit.",
   });
 });
@@ -156,7 +168,8 @@ test("takes the only property of a client without asking", async () => {
   expect(requests.find((r) => r.method === "POST")?.body).toMatchObject({
     propertyId: bobCottage.id,
     fixedPriceCents: 12000,
-    helperId: null,
+    ownerWorks: true,
+    helpers: [],
     notes: null,
   });
 });

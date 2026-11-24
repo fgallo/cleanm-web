@@ -202,7 +202,7 @@ export default function SeriesForm({
           draft={template}
           onChange={setTemplate}
           helpers={helpers}
-          assignedHelperId={null}
+          assignedHelperIds={[]}
           error={error}
         />
         {formMessage !== null && <FieldError>{formMessage}</FieldError>}

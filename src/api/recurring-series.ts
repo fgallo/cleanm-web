@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { del, get, patch, post } from "./client.ts";
 import {
+  changedFields,
   toJobTemplate,
   type Job,
   type JobTemplate,
@@ -31,9 +32,12 @@ export type RecurringSeries = SeriesRule & {
   notes: string | null;
   property: Job["property"];
   client: Job["client"];
-  helper: Job["helper"];
-  // What the generated jobs pay their helper when it is not the usual rate.
-  helperHourlyRateCents: number | null;
+  // Who does a job as the series generates it, and what the API works out
+  // from that, as on a job.
+  helpers: Job["helpers"];
+  ownerWorks: boolean;
+  people: number;
+  onSiteMinutes: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -88,20 +92,15 @@ export function toSeriesChanges(series: RecurringSeries): SeriesChanges {
 }
 
 // Sends only the fields that differ from `series`, like `updateJob`. The API
-// acts on whatever it is sent: it refuses an inactive helper even on the
-// series that already has them, and an `endDate` removes the visits after
-// it. A template field that changed reaches the upcoming visits that still
-// had the previous value.
+// acts on whatever it is sent: an `endDate` removes the visits after it, and
+// a template field that changed reaches the upcoming visits that still had
+// the previous value. The helpers count as one field there too: the visits
+// that still had the helpers the series had get the ones it has now.
 export function updateSeries(
   series: RecurringSeries,
   input: SeriesChanges,
 ): Promise<RecurringSeries> {
-  const current = toSeriesChanges(series);
-  const changes = Object.fromEntries(
-    Object.entries(input).filter(
-      ([field, value]) => value !== current[field as keyof SeriesChanges],
-    ),
-  );
+  const changes = changedFields(toSeriesChanges(series), input);
   // Nothing to ask of the API, which takes no empty update either.
   if (Object.keys(changes).length === 0) {
     return Promise.resolve(series);

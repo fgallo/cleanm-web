@@ -10,8 +10,8 @@ import {
   bobMonthly,
   carla,
   dan,
+  doneBy,
   helpers,
-  onJob,
   session,
 } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
@@ -41,11 +41,10 @@ function click(name: string) {
 const seriesPath = `/recurring-series/${aliceBiweekly.id}`;
 
 test("edits the template of a series from the list and sends only what changed", async () => {
-  const longer: RecurringSeries = {
-    ...aliceBiweekly,
-    durationMinutes: 210,
-    hourlyRateCents: 5000,
-  };
+  const longer: RecurringSeries = doneBy(
+    { ...aliceBiweekly, durationMinutes: 210, hourlyRateCents: 5000 },
+    [carla],
+  );
   let saved = false;
   const requests = mockApi(
     routes({
@@ -85,7 +84,10 @@ test("edits the template of a series from the list and sends only what changed",
   expect(valueOf("Hours")).toBe("3");
   expect(valueOf("Service")).toBe("regular");
   expect(valueOf("Hourly rate")).toBe("45.00");
-  expect(valueOf("Helper")).toBe(carla.id);
+  expect(
+    screen.getByRole<HTMLInputElement>("checkbox", { name: "Carla Invented" })
+      .checked,
+  ).toBe(true);
 
   fill("Hours", "3.5");
   fill("Hourly rate", "50");
@@ -139,8 +141,8 @@ test("ends a series, on a later day when a visit after the first is invoiced", a
 });
 
 test("resumes an ended series without sending its inactive helper again", async () => {
-  // The API refuses to assign Dan, even to the series he already has.
-  const dans: RecurringSeries = { ...bobMonthly, helper: onJob(dan) };
+  // Dan left the business; the series he was on still has him.
+  const dans: RecurringSeries = doneBy(bobMonthly, [dan]);
   const resumed: RecurringSeries = { ...dans, endDate: null };
   const path = `/recurring-series/${dans.id}`;
   const requests = mockApi(
@@ -162,10 +164,11 @@ test("resumes an ended series without sending its inactive helper again", async 
   ).toBeDefined();
   expect(valueOf("Ends")).toBe("2026-10-14");
   expect(valueOf("Agreed price")).toBe("200.00");
-  expect(valueOf("Helper")).toBe(dan.id);
   expect(
-    screen.getByRole("option", { name: "Dan Former (inactive)" }),
-  ).toBeDefined();
+    screen.getByRole<HTMLInputElement>("checkbox", {
+      name: "Dan Former (inactive)",
+    }).checked,
+  ).toBe(true);
   click("Clear end date");
   expect(valueOf("Ends")).toBe("");
   save();
@@ -175,6 +178,51 @@ test("resumes an ended series without sending its inactive helper again", async 
   ).toBeDefined();
   expect(requests.find((r) => r.method === "PATCH")?.body).toStrictEqual({
     endDate: null,
+  });
+});
+
+test("changes who does the visits of a series", async () => {
+  // Carla takes the visits over: without the owner, at a rate of their own.
+  const hers = doneBy(
+    aliceBiweekly,
+    [{ helper: carla, hourlyRateCents: 2500 }],
+    { ownerWorks: false },
+  );
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /recurring-series": () => json(200, [hers]),
+      [`GET ${seriesPath}`]: () => json(200, aliceBiweekly),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH ${seriesPath}`]: () => json(200, hers),
+    }),
+  );
+  renderApp({ route: `${seriesPath}/edit` });
+
+  await screen.findByLabelText("Ends");
+  // The form starts from who the series has.
+  const owner = screen.getByRole<HTMLInputElement>("checkbox", {
+    name: "Owner",
+  });
+  expect(owner.checked).toBe(true);
+  expect(
+    screen.getByRole<HTMLInputElement>("checkbox", { name: "Carla Invented" })
+      .checked,
+  ).toBe(true);
+  expect(valueOf("Hourly rate of Carla Invented")).toBe("");
+  expect(screen.getByText("2 people: 1 h 30 min at the house.")).toBeDefined();
+  fireEvent.click(owner);
+  fill("Hourly rate of Carla Invented", "25");
+  expect(screen.getByText("1 person: 3 h at the house.")).toBeDefined();
+  save();
+
+  // Back on the list, which names who does the visits now.
+  expect(
+    await screen.findByRole("heading", { name: "Recurring series" }),
+  ).toBeDefined();
+  expect(requests.find((r) => r.method === "PATCH")?.body).toStrictEqual({
+    ownerWorks: false,
+    helpers: [{ helperId: carla.id, hourlyRateCents: 2500 }],
   });
 });
 
@@ -201,11 +249,10 @@ test("returns to the list without asking the API when nothing changed", async ()
 test("starts the form of a visit from what the series made of it", async () => {
   // The calendar opens on the month of the visit.
   vi.useFakeTimers({ toFake: ["Date"], now: new Date(2026, 10, 12, 10) });
-  const visit: Job = {
-    ...aliceVisit,
-    recurringSeriesId: aliceBiweekly.id,
-    helper: onJob(carla),
-  };
+  const visit: Job = doneBy(
+    { ...aliceVisit, recurringSeriesId: aliceBiweekly.id },
+    [carla],
+  );
   // What the API makes of the visit when the rate of its series changes.
   const dearer: Job = { ...visit, hourlyRateCents: 5000, priceCents: 15000 };
   let saved = false;

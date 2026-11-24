@@ -2,7 +2,15 @@ import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { json, mockApi, networkFailure, routes } from "@/test/api.ts";
-import { alice, series, session } from "@/test/fixtures.ts";
+import {
+  alice,
+  aliceBiweekly,
+  bobMonthly,
+  carla,
+  doneBy,
+  series,
+  session,
+} from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
 
 afterEach(() => {
@@ -46,7 +54,8 @@ test("lists the series from the menu, those that ended included", async () => {
   // It started on a Tuesday, the weekday it keeps.
   expect(going.getByText("Every 2 weeks on Tuesday")).toBeDefined();
   expect(going.getByText("9:00 a.m. · 3 h")).toBeDefined();
-  expect(going.getByText("Carla Invented")).toBeDefined();
+  // Who does the visits: the owner first, then the helpers.
+  expect(going.getByText("Owner, Carla Invented")).toBeDefined();
   expect(going.getByText("Nov 3, 2026")).toBeDefined();
   // No end: the series goes on.
   expect(going.getAllByText("—")).toHaveLength(1);
@@ -63,10 +72,32 @@ test("lists the series from the menu, those that ended included", async () => {
   expect(over.getByText("1:30 p.m. · 2.5 h")).toBeDefined();
   expect(over.getByText("May 14, 2026")).toBeDefined();
   expect(over.getByText("Oct 14, 2026")).toBeDefined();
-  // Nobody assigned.
-  expect(over.getAllByText("—")).toHaveLength(1);
+  expect(over.getByText("Owner")).toBeDefined();
+  expect(over.queryByText("—")).toBeNull();
   // Ended: the whole row steps back.
   expect(rowOf("Bob Sample").className).toContain("text-muted-foreground");
+});
+
+test("names only who goes when the owner stays out", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /recurring-series": () =>
+        json(200, [
+          doneBy(aliceBiweekly, [carla], { ownerWorks: false }),
+          doneBy(bobMonthly, [], { ownerWorks: false }),
+        ]),
+    }),
+  );
+  renderApp({ route: "/recurring-series" });
+
+  await screen.findByText("Alice Example");
+  const helperAlone = within(rowOf("Alice Example"));
+  expect(helperAlone.getByText("Carla Invented")).toBeDefined();
+  expect(helperAlone.queryByText(/Owner/)).toBeNull();
+  // Nobody marked reads as anything else that is not set. Bob's series has
+  // an end, so the dash is in "Who".
+  expect(within(rowOf("Bob Sample")).getAllByText("—")).toHaveLength(1);
 });
 
 test("keeps a series going through its last day, where the business is", async () => {

@@ -88,7 +88,9 @@ test("adds a series every two weeks from the list", async () => {
   fill("Start time", "09:00");
   fill("Hours", "3");
   fill("Hourly rate", "45");
-  fill("Helper", carla.id);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Carla Invented" }));
+  // The owner with Carla, on every visit of the series.
+  expect(screen.getByText("2 people: 1 h 30 min at the house.")).toBeDefined();
   // An end picked and taken back: the way to blank is next to the field,
   // whatever the browser's own picker offers.
   expect(screen.queryByRole("button", { name: "Clear end date" })).toBeNull();
@@ -114,8 +116,8 @@ test("adds a series every two weeks from the list", async () => {
     serviceType: "regular",
     hourlyRateCents: 4500,
     fixedPriceCents: null,
-    helperId: carla.id,
-    helperHourlyRateCents: null,
+    ownerWorks: true,
+    helpers: [{ helperId: carla.id, hourlyRateCents: null }],
     notes: null,
   });
 });
@@ -174,8 +176,8 @@ test("adds a series on a day of the month, with an end", async () => {
     serviceType: "deep",
     hourlyRateCents: 5000,
     fixedPriceCents: 20000,
-    helperId: null,
-    helperHourlyRateCents: null,
+    ownerWorks: true,
+    helpers: [],
     notes: "Bring the long ladder.",
   });
 });
@@ -222,7 +224,7 @@ test("shows the API's issues under the series fields they name", async () => {
       "POST /recurring-series": () =>
         validationError([
           { path: "endDate", message: "Must not be before startDate" },
-          { path: "helperId", message: "Helper is not active" },
+          { path: "helpers.0.helperId", message: "Helper is not active" },
         ]),
     }),
   );
@@ -236,10 +238,10 @@ test("shows the API's issues under the series fields they name", async () => {
   fill("Start time", "09:00");
   fill("Hours", "3");
   fill("Hourly rate", "45");
-  fill("Helper", carla.id);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Carla Invented" }));
   add();
 
-  // One under the field of the form, one under a field of the template.
+  // One under the field of the form, one under a helper of the template.
   const alerts = await screen.findAllByRole("alert");
   expect(alerts.map((alert) => alert.textContent)).toEqual([
     "Must not be before startDate",
@@ -248,9 +250,11 @@ test("shows the API's issues under the series fields they name", async () => {
   expect(screen.getByLabelText("Ends").getAttribute("aria-invalid")).toBe(
     "true",
   );
-  expect(screen.getByLabelText("Helper").getAttribute("aria-invalid")).toBe(
-    "true",
-  );
+  expect(
+    screen
+      .getByRole("checkbox", { name: "Carla Invented" })
+      .getAttribute("aria-invalid"),
+  ).toBe("true");
   expect(screen.getByLabelText("Starts").getAttribute("aria-invalid")).toBe(
     "false",
   );

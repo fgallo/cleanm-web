@@ -13,6 +13,22 @@ export const jobStatuses = [
 ] as const;
 export type JobStatus = (typeof jobStatuses)[number];
 
+// A helper on a job. `helper.hourlyRateCents` is their usual rate, and
+// `hourlyRateCents` next to it what this job pays them for an hour when it
+// is not the usual one. `payCents` is what the job pays them: the rate in
+// effect for the time at the house, `null` while they have no rate.
+export type AssignedHelper = {
+  helper: { id: string; name: string; hourlyRateCents: number | null };
+  hourlyRateCents: number | null;
+  payCents: number | null;
+};
+
+// A helper as a request assigns them; `null` pays their usual rate.
+export type HelperAssignment = {
+  helperId: string;
+  hourlyRateCents: number | null;
+};
+
 // The shape GET /jobs returns. A job is a slot on the organization's
 // calendar, not an instant: `scheduledDate` is YYYY-MM-DD and `startTime`
 // HH:MM:SS, both without a time zone (brief, design rule 4).
@@ -20,6 +36,8 @@ export type Job = {
   id: string;
   scheduledDate: string;
   startTime: string;
+  // The hours of cleaning, which is what the client pays for. How long the
+  // job takes at the house is `onSiteMinutes`.
   durationMinutes: number;
   serviceType: ServiceType;
   status: JobStatus;
@@ -39,12 +57,16 @@ export type Job = {
     notes: string | null;
   };
   client: { id: string; name: string };
-  // `hourlyRateCents` is the helper's usual rate, what this job pays them
-  // for an hour unless it carries a rate of its own.
-  helper: { id: string; name: string; hourlyRateCents: number | null } | null;
-  // What the helper is paid for an hour of this job when it is not their
-  // usual rate. It belongs to the job: it stays when the helper changes.
-  helperHourlyRateCents: number | null;
+  // The helpers who do the job, ordered by name; empty while none is
+  // assigned.
+  helpers: AssignedHelper[];
+  // Whether the owner of the business works on the job, next to them.
+  ownerWorks: boolean;
+  // How many do the job, one while nobody is marked, and how long it takes
+  // them at the house: the hours of cleaning shared between them. The API
+  // works both out.
+  people: number;
+  onSiteMinutes: number;
   recurringSeriesId: string | null;
   invoice: { id: string; number: number } | null;
   createdAt: string;
@@ -52,7 +74,7 @@ export type Job = {
 };
 
 // What a job and a recurring series, the template of its jobs, have in
-// common: when in the day, what it is, who helps and what it costs.
+// common: when in the day, what it is, who does it and what it costs.
 export type JobTemplate = {
   // HH:MM, as a time field gives it; the API takes it with or without
   // seconds.
@@ -62,10 +84,10 @@ export type JobTemplate = {
   hourlyRateCents: number;
   // `null` charges the hourly rate x the duration.
   fixedPriceCents: number | null;
-  // `null` assigns nobody.
-  helperId: string | null;
-  // `null` pays the helper their usual rate.
-  helperHourlyRateCents: number | null;
+  ownerWorks: boolean;
+  // Sent as a whole: the list replaces the one the job had, and an empty
+  // one assigns nobody.
+  helpers: HelperAssignment[];
   notes: string | null;
 };
 
@@ -121,8 +143,8 @@ export function toJobTemplate(
     | "serviceType"
     | "hourlyRateCents"
     | "fixedPriceCents"
-    | "helper"
-    | "helperHourlyRateCents"
+    | "ownerWorks"
+    | "helpers"
     | "notes"
   >,
 ): JobTemplate {
@@ -132,8 +154,11 @@ export function toJobTemplate(
     serviceType: source.serviceType,
     hourlyRateCents: source.hourlyRateCents,
     fixedPriceCents: source.fixedPriceCents,
-    helperId: source.helper?.id ?? null,
-    helperHourlyRateCents: source.helperHourlyRateCents,
+    ownerWorks: source.ownerWorks,
+    helpers: source.helpers.map((assigned) => ({
+      helperId: assigned.helper.id,
+      hourlyRateCents: assigned.hourlyRateCents,
+    })),
     notes: source.notes,
   };
 }
@@ -147,16 +172,45 @@ export function toJobInput(job: Job): JobInput {
   };
 }
 
-// Sends only the fields that differ from `job`. The API checks whatever it
-// is sent: a job keeps a helper who became inactive, but assigning one is
-// refused, so sending that helper back unchanged would fail the update.
-export function updateJob(job: Job, input: JobInput): Promise<Job> {
-  const current = toJobInput(job);
-  const changes = Object.fromEntries(
-    Object.entries(input).filter(
-      ([field, value]) => value !== current[field as keyof JobInput],
+// The fields of `input` that differ from `current`: what an update sends.
+// The helpers are one field, the list as a whole: the same helpers at the
+// same rates are no change, in whatever order.
+export function changedFields<Input extends JobTemplate>(
+  current: Input,
+  input: Input,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([field, value]) =>
+      field === "helpers"
+        ? !sameHelpers(current.helpers, input.helpers)
+        : value !== current[field as keyof Input],
     ),
   );
+}
+
+// A helper is on a list at most once, so two lists of one length are the
+// same when each helper of one is on the other at the same rate.
+function sameHelpers(
+  one: HelperAssignment[],
+  other: HelperAssignment[],
+): boolean {
+  return (
+    one.length === other.length &&
+    other.every((assignment) =>
+      one.some(
+        (candidate) =>
+          candidate.helperId === assignment.helperId &&
+          candidate.hourlyRateCents === assignment.hourlyRateCents,
+      ),
+    )
+  );
+}
+
+// Sends only the fields that differ from `job`. The helpers travel as the
+// whole list once any of them changed; the API takes in it a helper who
+// became inactive, as long as the job already had them.
+export function updateJob(job: Job, input: JobInput): Promise<Job> {
+  const changes = changedFields(toJobInput(job), input);
   // Nothing to ask of the API, which takes no empty update either.
   if (Object.keys(changes).length === 0) {
     return Promise.resolve(job);
