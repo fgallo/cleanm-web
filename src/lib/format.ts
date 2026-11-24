@@ -19,6 +19,17 @@ export function formatHours(minutes: number): string {
   return `${quantity.format(minutes / 60)} h`;
 }
 
+// A stretch of time in minutes as it is spent, "1 h 15 min", "3 h" or
+// "45 min": the time at a house is counted to the minute.
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) {
+    return `${rest} min`;
+  }
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
 // Basis points as a percentage, "13%" or "12.5%": 100 of them are 1%.
 export function formatPercent(basisPoints: number): string {
   return `${quantity.format(basisPoints / 100)}%`;
