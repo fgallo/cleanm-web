@@ -1,6 +1,6 @@
 import { assert, expect, test } from "vitest";
 
-import { ApiError, get, post } from "./client.ts";
+import { ApiError, describeOutsideFields, get, post } from "./client.ts";
 import { apiError, json, mockApi, noContent } from "@/test/api.ts";
 
 async function rejectionOf(promise: Promise<unknown>): Promise<unknown> {
@@ -73,4 +73,29 @@ test("describes a response that is not in the API's error shape", async () => {
 test("resolves with nothing for 204", async () => {
   mockApi(() => noContent());
   await expect(post("/auth/logout")).resolves.toBeUndefined();
+});
+
+test("leaves to a list field the issues of what is in it", () => {
+  const fields = ["startTime", "helpers"];
+  const about = (...paths: string[]) =>
+    new ApiError(
+      400,
+      "validation_error",
+      "Invalid request",
+      paths.map((path) => ({ path, message: `About ${path}` })),
+    );
+
+  expect(
+    describeOutsideFields(
+      about("helpers", "helpers.0.helperId", "helpers.1.hourlyRateCents"),
+      fields,
+    ),
+  ).toBeNull();
+  // A name that only starts like a field is not inside it.
+  expect(
+    describeOutsideFields(about("helpers.0.helperId", "helpersNote"), fields),
+  ).toBe("About helpersNote");
+  expect(describeOutsideFields(about("startTime", "endDate"), fields)).toBe(
+    "About endDate",
+  );
 });

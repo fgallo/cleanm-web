@@ -55,7 +55,8 @@ export function issuesFor(error: Error | null, field: string): Issue[] {
 
 // What a form says below its fields: a failure that is not about them (the
 // API is down, the record was deleted meanwhile), or the issues that name
-// none of `fields`. `null` when every issue has its field.
+// none of `fields`. A field that is a list has the issues of what is in it
+// as well ("helpers.0.helperId"). `null` when every issue has its field.
 export function describeOutsideFields(
   error: Error,
   fields: readonly string[],
@@ -63,7 +64,12 @@ export function describeOutsideFields(
   if (!(error instanceof ApiError) || error.issues.length === 0) {
     return describeFailure(error);
   }
-  const others = error.issues.filter((issue) => !fields.includes(issue.path));
+  const others = error.issues.filter(
+    (issue) =>
+      !fields.some(
+        (field) => issue.path === field || issue.path.startsWith(`${field}.`),
+      ),
+  );
   return others.length === 0
     ? null
     : others.map((issue) => issue.message).join(". ");
