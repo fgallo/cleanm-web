@@ -126,7 +126,9 @@ export default function JobForm({
           draft={template}
           onChange={setTemplate}
           helpers={helpers}
-          assignedHelperId={initial?.helperId ?? null}
+          assignedHelperIds={
+            initial?.helpers.map((assignment) => assignment.helperId) ?? []
+          }
           error={error}
         />
         {formMessage !== null && <FieldError>{formMessage}</FieldError>}

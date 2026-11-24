@@ -17,9 +17,10 @@ export type TemplateDraft = {
   serviceType: ServiceType;
   hourlyRate: string;
   fixedPrice: string;
-  // An empty value is "No helper".
-  helperId: string;
-  helperHourlyRate: string;
+  ownerWorks: boolean;
+  // The helpers who do the job, in the order they are sent, each with the
+  // rate typed for them: blank pays their usual one.
+  helpers: Array<{ helperId: string; hourlyRate: string }>;
   notes: string;
 };
 
@@ -30,13 +31,14 @@ export const templateFieldNames = [
   "serviceType",
   "hourlyRateCents",
   "fixedPriceCents",
-  "helperId",
-  "helperHourlyRateCents",
+  "ownerWorks",
+  "helpers",
   "notes",
 ] as const;
 
-// A new template is regular, as most visits are. Its time, hours and rate
-// start blank: a guess would be saved as easily as a choice.
+// A new template is regular and done by the owner alone, as most visits
+// are. Its time, hours and rate start blank: a guess would be saved as
+// easily as a choice.
 export function toDraft(template: JobTemplate | null): TemplateDraft {
   if (template === null) {
     return {
@@ -45,8 +47,8 @@ export function toDraft(template: JobTemplate | null): TemplateDraft {
       serviceType: "regular",
       hourlyRate: "",
       fixedPrice: "",
-      helperId: "",
-      helperHourlyRate: "",
+      ownerWorks: true,
+      helpers: [],
       notes: "",
     };
   }
@@ -56,8 +58,11 @@ export function toDraft(template: JobTemplate | null): TemplateDraft {
     serviceType: template.serviceType,
     hourlyRate: centsToDollars(template.hourlyRateCents),
     fixedPrice: optionalCentsToDollars(template.fixedPriceCents),
-    helperId: template.helperId ?? "",
-    helperHourlyRate: optionalCentsToDollars(template.helperHourlyRateCents),
+    ownerWorks: template.ownerWorks,
+    helpers: template.helpers.map((assignment) => ({
+      helperId: assignment.helperId,
+      hourlyRate: optionalCentsToDollars(assignment.hourlyRateCents),
+    })),
     notes: template.notes ?? "",
   };
 }
@@ -69,8 +74,11 @@ export function fromDraft(draft: TemplateDraft): JobTemplate {
     serviceType: draft.serviceType,
     hourlyRateCents: dollarsToCents(draft.hourlyRate),
     fixedPriceCents: optionalDollarsToCents(draft.fixedPrice),
-    helperId: draft.helperId === "" ? null : draft.helperId,
-    helperHourlyRateCents: optionalDollarsToCents(draft.helperHourlyRate),
+    ownerWorks: draft.ownerWorks,
+    helpers: draft.helpers.map((helper) => ({
+      helperId: helper.helperId,
+      hourlyRateCents: optionalDollarsToCents(helper.hourlyRate),
+    })),
     notes: emptyAsNull(draft.notes),
   };
 }
@@ -86,4 +94,21 @@ export function hourlyPriceCents(
     : Math.round(
         (dollarsToCents(draft.hourlyRate) * hoursToMinutes(draft.hours)) / 60,
       );
+}
+
+// Who does the job as it is typed, with the same arithmetic as the API: the
+// helpers and the owner, one person while nobody is marked, and the hours
+// of cleaning shared between them, to the minute. The time at the house is
+// unknown while the hours are blank.
+export function teamOf(
+  draft: Pick<TemplateDraft, "hours" | "ownerWorks" | "helpers">,
+): { people: number; onSiteMinutes: number | null } {
+  const people = Math.max(draft.helpers.length + (draft.ownerWorks ? 1 : 0), 1);
+  return {
+    people,
+    onSiteMinutes:
+      draft.hours.trim() === ""
+        ? null
+        : Math.max(Math.round(hoursToMinutes(draft.hours) / people), 1),
+  };
 }

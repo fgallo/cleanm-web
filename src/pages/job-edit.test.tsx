@@ -15,8 +15,8 @@ import {
   bobVisit,
   carla,
   dan,
+  doneBy,
   helpers,
-  onJob,
   session,
 } from "@/test/fixtures.ts";
 import { renderApp } from "@/test/render.tsx";
@@ -31,18 +31,25 @@ function valueOf(label: string): string {
   return screen.getByLabelText<Control>(label).value;
 }
 
+// The box that says whether this person does the job.
+function box(name: string): HTMLInputElement {
+  return screen.getByRole<HTMLInputElement>("checkbox", { name });
+}
+
 function save() {
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 }
 
 test("edits a job from its day and sends only what changed", async () => {
-  const done: Job = {
-    ...aliceVisit,
-    status: "completed",
-    durationMinutes: 210,
-    priceCents: 15750,
-    helper: onJob(carla),
-  };
+  const done: Job = doneBy(
+    {
+      ...aliceVisit,
+      status: "completed",
+      durationMinutes: 210,
+      priceCents: 15750,
+    },
+    [carla],
+  );
   let saved = false;
   const requests = mockApi(
     routes({
@@ -71,31 +78,37 @@ test("edits a job from its day and sends only what changed", async () => {
   expect(valueOf("Service")).toBe("regular");
   expect(valueOf("Hourly rate")).toBe("45.00");
   expect(valueOf("Agreed price")).toBe("");
-  expect(valueOf("Helper")).toBe("");
   expect(screen.getByText("Blank charges by the hour: $135.00.")).toBeDefined();
   // Dan left the business: he is not offered for a job he is not on.
   expect(
-    Array.from(
-      screen.getByLabelText<HTMLSelectElement>("Helper").options,
-      (option) => option.textContent,
-    ),
-  ).toEqual(["No helper", "Carla Invented"]);
+    screen
+      .getAllByRole<HTMLInputElement>("checkbox")
+      .map((input) => [input.labels?.[0]?.textContent, input.checked]),
+  ).toEqual([
+    ["Owner", true],
+    ["Carla Invented", false],
+  ]);
+  expect(screen.getByText("1 person: 3 h at the house.")).toBeDefined();
 
   fill("Status", "completed");
   fill("Hours", "3.5");
-  fill("Helper", carla.id);
+  fireEvent.click(box("Carla Invented"));
   expect(screen.getByText("Blank charges by the hour: $157.50.")).toBeDefined();
+  // The price is for the hours of cleaning; two people halve the visit.
+  expect(screen.getByText("2 people: 1 h 45 min at the house.")).toBeDefined();
   save();
 
   // Back on the day of the job, which shows the change.
   expect(
     await screen.findByRole("heading", { name: "Tuesday, November 17, 2026" }),
   ).toBeDefined();
-  expect(await screen.findByText("3.5 h")).toBeDefined();
+  expect(
+    await screen.findByText("shared by 2 people, 1 h 45 min at the house"),
+  ).toBeDefined();
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
     status: "completed",
     durationMinutes: 210,
-    helperId: carla.id,
+    helpers: [{ helperId: carla.id, hourlyRateCents: null }],
   });
 });
 
@@ -185,11 +198,9 @@ test("clears an agreed price and sends money as cents", async () => {
 });
 
 test("assigns a helper at a rate of the job's own", async () => {
-  const special: Job = {
-    ...aliceVisit,
-    helper: onJob(carla),
-    helperHourlyRateCents: 2500,
-  };
+  const special = doneBy(aliceVisit, [
+    { helper: carla, hourlyRateCents: 2500 },
+  ]);
   const requests = mockApi(
     routes({
       "GET /auth/me": () => json(200, session),
@@ -201,32 +212,35 @@ test("assigns a helper at a rate of the job's own", async () => {
   );
   renderApp({ route: `/jobs/${aliceVisit.id}/edit` });
 
-  await screen.findByLabelText("Helper's hourly rate");
-  expect(valueOf("Helper's hourly rate")).toBe("");
-  // Nobody chosen yet: there is no usual rate to name.
-  expect(screen.getByText("Blank pays the helper's usual rate.")).toBeDefined();
-  fill("Helper", carla.id);
+  await screen.findByLabelText("Status");
+  // What she is usually paid reads next to her name. A rate of the job is
+  // asked for a helper who is on it.
+  expect(screen.getByText("usually $22.50 an hour")).toBeDefined();
+  expect(screen.queryByLabelText("Hourly rate of Carla Invented")).toBeNull();
+  fireEvent.click(box("Carla Invented"));
+  expect(valueOf("Hourly rate of Carla Invented")).toBe("");
   expect(
-    screen.getByText("Blank pays the helper's usual rate: $22.50."),
+    screen.getByText(
+      "A rate next to a helper is what the job pays them for an hour. Blank pays their usual rate.",
+    ),
   ).toBeDefined();
-  fill("Helper's hourly rate", "25");
+  fill("Hourly rate of Carla Invented", "25");
   save();
 
-  // The day shows the rate in effect on the job.
-  expect(await screen.findByText("at $25.00 an hour")).toBeDefined();
+  // The day shows the rate in effect on the job, for the 1h30 she is there.
+  expect(
+    await screen.findByText("at $25.00 an hour, $37.50 for the job"),
+  ).toBeDefined();
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
-    helperId: carla.id,
-    helperHourlyRateCents: 2500,
+    helpers: [{ helperId: carla.id, hourlyRateCents: 2500 }],
   });
 });
 
 test("returns a job to the usual rate of its helper", async () => {
-  const special: Job = {
-    ...aliceVisit,
-    helper: onJob(carla),
-    helperHourlyRateCents: 2500,
-  };
-  const usual: Job = { ...special, helperHourlyRateCents: null };
+  const special = doneBy(aliceVisit, [
+    { helper: carla, hourlyRateCents: 2500 },
+  ]);
+  const usual = doneBy(aliceVisit, [carla]);
   const requests = mockApi(
     routes({
       "GET /auth/me": () => json(200, session),
@@ -238,27 +252,105 @@ test("returns a job to the usual rate of its helper", async () => {
   );
   renderApp({ route: `/jobs/${special.id}/edit` });
 
-  await screen.findByLabelText("Helper's hourly rate");
-  expect(valueOf("Helper's hourly rate")).toBe("25.00");
-  // The rate belongs to the job: it stays as typed without a helper.
-  fill("Helper", "");
-  expect(valueOf("Helper's hourly rate")).toBe("25.00");
-  fill("Helper", carla.id);
-  fill("Helper's hourly rate", "");
+  await screen.findByLabelText("Hourly rate of Carla Invented");
+  expect(valueOf("Hourly rate of Carla Invented")).toBe("25.00");
+  // The rate is hers on this job: it goes when she is taken off it.
+  fireEvent.click(box("Carla Invented"));
+  expect(screen.queryByLabelText("Hourly rate of Carla Invented")).toBeNull();
+  fireEvent.click(box("Carla Invented"));
+  expect(valueOf("Hourly rate of Carla Invented")).toBe("");
   save();
 
-  expect(await screen.findByText("at $22.50 an hour")).toBeDefined();
+  expect(
+    await screen.findByText("at $22.50 an hour, $33.75 for the job"),
+  ).toBeDefined();
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
-    helperHourlyRateCents: null,
+    helpers: [{ helperId: carla.id, hourlyRateCents: null }],
   });
 });
 
+test("clears the rate a job has for a helper", async () => {
+  const special = doneBy(aliceVisit, [
+    { helper: carla, hourlyRateCents: 2500 },
+  ]);
+  const usual = doneBy(aliceVisit, [carla]);
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [usual]),
+      [`GET /jobs/${special.id}`]: () => json(200, special),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH /jobs/${special.id}`]: () => json(200, usual),
+    }),
+  );
+  renderApp({ route: `/jobs/${special.id}/edit` });
+
+  await screen.findByLabelText("Hourly rate of Carla Invented");
+  fill("Hourly rate of Carla Invented", "");
+  save();
+
+  await screen.findByRole("heading", { name: "Tuesday, November 17, 2026" });
+  expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
+    helpers: [{ helperId: carla.id, hourlyRateCents: null }],
+  });
+});
+
+test("takes the owner off a job the helper does alone", async () => {
+  const together = doneBy(aliceVisit, [carla]);
+  const alone = doneBy(aliceVisit, [carla], { ownerWorks: false });
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [alone]),
+      [`GET /jobs/${together.id}`]: () => json(200, together),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH /jobs/${together.id}`]: () => json(200, alone),
+    }),
+  );
+  renderApp({ route: `/jobs/${together.id}/edit` });
+
+  await screen.findByLabelText("Status");
+  expect(box("Owner").checked).toBe(true);
+  expect(box("Carla Invented").checked).toBe(true);
+  expect(screen.getByText("2 people: 1 h 30 min at the house.")).toBeDefined();
+  fireEvent.click(box("Owner"));
+  expect(screen.getByText("1 person: 3 h at the house.")).toBeDefined();
+  save();
+
+  // Alone, she is there for all of the hours, and is paid for them.
+  expect(
+    await screen.findByText("at $22.50 an hour, $67.50 for the job"),
+  ).toBeDefined();
+  expect(screen.getByText("9:00 a.m. – 12:00 p.m.")).toBeDefined();
+  // The helpers did not change: the list does not travel.
+  expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
+    ownerWorks: false,
+  });
+});
+
+test("counts one person while nobody is marked", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      [`GET /jobs/${aliceVisit.id}`]: () => json(200, aliceVisit),
+      "GET /helpers": () => json(200, helpers),
+    }),
+  );
+  renderApp({ route: `/jobs/${aliceVisit.id}/edit` });
+
+  await screen.findByLabelText("Status");
+  fireEvent.click(box("Owner"));
+  expect(screen.getByText("1 person: 3 h at the house.")).toBeDefined();
+  // Nothing to share the hours with until there are hours.
+  fill("Hours", "");
+  expect(
+    screen.getByText("Hours of cleaning, shared by who does the job."),
+  ).toBeDefined();
+});
+
 test("keeps an inactive helper on a job without sending them again", async () => {
-  // The API refuses to assign Dan, even to the job he already has.
-  const dansJob: Job = {
-    ...bobVisit,
-    helper: onJob(dan),
-  };
+  // Dan left the business; the job he did still has him.
+  const dansJob = doneBy(bobVisit, [dan]);
   const noted: Job = { ...dansJob, notes: "Gate code 4321." };
   const requests = mockApi(
     routes({
@@ -271,19 +363,46 @@ test("keeps an inactive helper on a job without sending them again", async () =>
   );
   renderApp({ route: `/jobs/${dansJob.id}/edit` });
 
-  await screen.findByLabelText("Helper");
-  expect(valueOf("Helper")).toBe(dan.id);
-  expect(
-    screen.getByRole("option", { name: "Dan Former (inactive)" }),
-  ).toBeDefined();
-  // Dan has no usual rate: there is no amount to name.
-  expect(screen.getByText("Blank pays the helper's usual rate.")).toBeDefined();
+  await screen.findByLabelText("Status");
+  expect(box("Dan Former (inactive)").checked).toBe(true);
+  // Dan has no usual rate: there is no amount to name next to him.
+  expect(screen.getAllByText(/^usually /)).toHaveLength(1);
   fill("Notes about the job", " Gate code 4321. ");
   save();
 
   expect(await screen.findByText("Gate code 4321.")).toBeDefined();
   expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
     notes: "Gate code 4321.",
+  });
+});
+
+test("sends the whole list when a helper joins one who became inactive", async () => {
+  const dansJob = doneBy(bobVisit, [dan]);
+  const both = doneBy(bobVisit, [carla, dan]);
+  const requests = mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [both]),
+      [`GET /jobs/${dansJob.id}`]: () => json(200, dansJob),
+      "GET /helpers": () => json(200, helpers),
+      [`PATCH /jobs/${dansJob.id}`]: () => json(200, both),
+    }),
+  );
+  renderApp({ route: `/jobs/${dansJob.id}/edit` });
+
+  await screen.findByLabelText("Status");
+  fireEvent.click(box("Carla Invented"));
+  expect(screen.getByText("3 people: 50 min at the house.")).toBeDefined();
+  save();
+
+  await screen.findByRole("heading", { name: "Tuesday, November 17, 2026" });
+  // The list replaces the one the job had, so Dan travels with it; the
+  // API takes him because the job already had him.
+  expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({
+    helpers: [
+      { helperId: dan.id, hourlyRateCents: null },
+      { helperId: carla.id, hourlyRateCents: null },
+    ],
   });
 });
 
@@ -314,24 +433,25 @@ test("shows the API's issues under the job fields they name", async () => {
       [`GET /jobs/${aliceVisit.id}`]: () => json(200, aliceVisit),
       "GET /helpers": () => json(200, helpers),
       [`PATCH /jobs/${aliceVisit.id}`]: () =>
+        // The API names a helper by their place in the list it was sent.
         validationError([
-          { path: "helperId", message: "Helper is not active" },
+          { path: "helpers.0.helperId", message: "Helper is not active" },
         ]),
     }),
   );
   renderApp({ route: `/jobs/${aliceVisit.id}/edit` });
 
-  await screen.findByLabelText("Helper");
-  fill("Helper", carla.id);
+  await screen.findByLabelText("Status");
+  fireEvent.click(box("Carla Invented"));
   fill("Hours", "4");
   save();
 
+  // Under the helper, and nowhere else: not below the fields as well.
   expect((await screen.findByRole("alert")).textContent).toBe(
     "Helper is not active",
   );
-  expect(screen.getByLabelText("Helper").getAttribute("aria-invalid")).toBe(
-    "true",
-  );
+  expect(box("Carla Invented").getAttribute("aria-invalid")).toBe("true");
+  expect(box("Owner").getAttribute("aria-invalid")).toBeNull();
   expect(screen.getByLabelText("Hours").getAttribute("aria-invalid")).toBe(
     "false",
   );

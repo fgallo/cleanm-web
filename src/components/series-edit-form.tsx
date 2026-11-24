@@ -83,7 +83,9 @@ export default function SeriesEditForm({
           draft={template}
           onChange={setTemplate}
           helpers={helpers}
-          assignedHelperId={initial.helperId}
+          assignedHelperIds={initial.helpers.map(
+            (assignment) => assignment.helperId,
+          )}
           error={error}
         />
         {formMessage !== null && <FieldError>{formMessage}</FieldError>}

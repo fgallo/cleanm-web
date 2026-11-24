@@ -6,6 +6,8 @@ import {
   FieldDescription,
   FieldError,
   FieldLabel,
+  FieldLegend,
+  FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,26 +15,34 @@ import {
   NativeSelectOption,
 } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
-import { formatMoney } from "@/lib/format.ts";
-import { serviceTypeLabels } from "@/lib/job-labels.ts";
-import { hourlyPriceCents, type TemplateDraft } from "@/lib/job-template.ts";
+import { formatDuration, formatMoney } from "@/lib/format.ts";
+import {
+  ownerLabel,
+  peopleLabel,
+  serviceTypeLabels,
+} from "@/lib/job-labels.ts";
+import {
+  hourlyPriceCents,
+  teamOf,
+  type TemplateDraft,
+} from "@/lib/job-template.ts";
 
 // The fields a job and a recurring series share: when in the day, what kind
-// of cleaning, who helps and what it costs. The form around them keeps the
+// of cleaning, what it costs and who does it. The form around them keeps the
 // draft and adds what is its own, a day or a rule. Hours and dollars are
 // what is typed here.
 export default function JobTemplateFields({
   draft,
   onChange,
   helpers,
-  assignedHelperId,
+  assignedHelperIds,
   error,
 }: {
   draft: TemplateDraft;
   onChange: (draft: TemplateDraft) => void;
   helpers: Helper[];
-  // The helper the job or the series already has, if any.
-  assignedHelperId: string | null;
+  // The helpers the job or the series already has.
+  assignedHelperIds: string[];
   // What the last attempt to save failed with.
   error: Error | null;
 }) {
@@ -43,17 +53,33 @@ export default function JobTemplateFields({
     onChange({ ...draft, [key]: value });
   }
 
-  // Only active helpers can be assigned. The one already assigned stays on
-  // offer even when inactive, so the field shows who did the job.
+  // A helper ticked joins at their usual rate; one unticked takes the rate
+  // typed for them along, as on the API.
+  function assign(helperId: string, assigned: boolean) {
+    set(
+      "helpers",
+      assigned
+        ? [...draft.helpers, { helperId, hourlyRate: "" }]
+        : draft.helpers.filter((helper) => helper.helperId !== helperId),
+    );
+  }
+
+  function setRate(helperId: string, hourlyRate: string) {
+    set(
+      "helpers",
+      draft.helpers.map((helper) =>
+        helper.helperId === helperId ? { ...helper, hourlyRate } : helper,
+      ),
+    );
+  }
+
+  // Only active helpers can be assigned. Those already assigned stay on
+  // offer even when inactive, so the form shows who does the job.
   const offeredHelpers = helpers.filter(
-    (helper) => helper.active || helper.id === assignedHelperId,
+    (helper) => helper.active || assignedHelperIds.includes(helper.id),
   );
   const hourlyPrice = hourlyPriceCents(draft);
-  // What the helper chosen is paid when there is no rate set here. Unknown
-  // while nobody is chosen, or while that helper has no usual rate.
-  const usualHelperRateCents =
-    helpers.find((helper) => helper.id === draft.helperId)?.hourlyRateCents ??
-    null;
+  const team = teamOf(draft);
 
   const issues = {
     startTime: issuesFor(error, "startTime"),
@@ -61,8 +87,8 @@ export default function JobTemplateFields({
     serviceType: issuesFor(error, "serviceType"),
     hourlyRateCents: issuesFor(error, "hourlyRateCents"),
     fixedPriceCents: issuesFor(error, "fixedPriceCents"),
-    helperId: issuesFor(error, "helperId"),
-    helperHourlyRateCents: issuesFor(error, "helperHourlyRateCents"),
+    // About the people as a whole, not about one of the helpers.
+    team: [...issuesFor(error, "ownerWorks"), ...issuesFor(error, "helpers")],
     notes: issuesFor(error, "notes"),
   };
 
@@ -94,9 +120,17 @@ export default function JobTemplateFields({
             max="24"
             step="any"
             aria-invalid={issues.durationMinutes.length > 0}
+            aria-describedby="hours-description"
             value={draft.hours}
             onChange={(event) => set("hours", event.target.value)}
           />
+          {/* The hours are what is charged; who does the job, below,
+              decides how long it takes. */}
+          <FieldDescription id="hours-description">
+            {team.onSiteMinutes === null
+              ? "Hours of cleaning, shared by who does the job."
+              : `${peopleLabel(team.people)}: ${formatDuration(team.onSiteMinutes)} at the house.`}
+          </FieldDescription>
           <FieldError errors={issues.durationMinutes} />
         </Field>
       </div>
@@ -162,50 +196,83 @@ export default function JobTemplateFields({
           <FieldError errors={issues.fixedPriceCents} />
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field data-invalid={issues.helperId.length > 0}>
-          <FieldLabel htmlFor="helperId">Helper</FieldLabel>
-          <NativeSelect
-            id="helperId"
-            className="w-full"
-            aria-invalid={issues.helperId.length > 0}
-            value={draft.helperId}
-            onChange={(event) => set("helperId", event.target.value)}
-          >
-            <NativeSelectOption value="">No helper</NativeSelectOption>
-            {offeredHelpers.map((helper) => (
-              <NativeSelectOption key={helper.id} value={helper.id}>
-                {helper.active ? helper.name : `${helper.name} (inactive)`}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          <FieldError errors={issues.helperId} />
-        </Field>
-        <Field data-invalid={issues.helperHourlyRateCents.length > 0}>
-          <FieldLabel htmlFor="helperHourlyRate">
-            Helper's hourly rate
-          </FieldLabel>
-          {/* It belongs to the job, so it stays as typed when another
-              helper is chosen. */}
-          <Input
-            id="helperHourlyRate"
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            aria-invalid={issues.helperHourlyRateCents.length > 0}
-            aria-describedby="helperHourlyRate-description"
-            value={draft.helperHourlyRate}
-            onChange={(event) => set("helperHourlyRate", event.target.value)}
+      <FieldSet className="gap-2">
+        <FieldLegend variant="label">Who does the job</FieldLegend>
+        <label className="flex min-h-8 w-fit items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4 accent-primary"
+            checked={draft.ownerWorks}
+            onChange={(event) => set("ownerWorks", event.target.checked)}
           />
-          <FieldDescription id="helperHourlyRate-description">
-            {usualHelperRateCents === null
-              ? "Blank pays the helper's usual rate."
-              : `Blank pays the helper's usual rate: ${formatMoney(usualHelperRateCents)}.`}
+          {ownerLabel}
+        </label>
+        {offeredHelpers.map((helper) => {
+          // The API names a helper by their place in the list it was sent,
+          // which is the order of the draft.
+          const place = draft.helpers.findIndex(
+            (assigned) => assigned.helperId === helper.id,
+          );
+          const assigned = draft.helpers[place];
+          const helperIssues =
+            assigned === undefined
+              ? []
+              : [
+                  ...issuesFor(error, `helpers.${place}.helperId`),
+                  ...issuesFor(error, `helpers.${place}.hourlyRateCents`),
+                ];
+          return (
+            <div key={helper.id}>
+              <div className="grid min-h-8 grid-cols-[auto_1fr_auto] items-center gap-x-2 text-sm">
+                <input
+                  id={`helper-${helper.id}`}
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  aria-invalid={helperIssues.length > 0}
+                  checked={assigned !== undefined}
+                  onChange={(event) => assign(helper.id, event.target.checked)}
+                />
+                {/* Where the two do not fit on a line, the usual rate goes
+                    under the name in one piece. */}
+                <div className="flex flex-wrap gap-x-2">
+                  <label
+                    htmlFor={`helper-${helper.id}`}
+                    className="whitespace-nowrap"
+                  >
+                    {helper.active ? helper.name : `${helper.name} (inactive)`}
+                  </label>
+                  {helper.hourlyRateCents !== null && (
+                    <span className="whitespace-nowrap text-muted-foreground">
+                      usually {formatMoney(helper.hourlyRateCents)} an hour
+                    </span>
+                  )}
+                </div>
+                {assigned !== undefined && (
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    className="w-24"
+                    aria-label={`Hourly rate of ${helper.name}`}
+                    aria-describedby="helpers-description"
+                    value={assigned.hourlyRate}
+                    onChange={(event) => setRate(helper.id, event.target.value)}
+                  />
+                )}
+              </div>
+              <FieldError errors={helperIssues} />
+            </div>
+          );
+        })}
+        {draft.helpers.length > 0 && (
+          <FieldDescription id="helpers-description">
+            A rate next to a helper is what the job pays them for an hour. Blank
+            pays their usual rate.
           </FieldDescription>
-          <FieldError errors={issues.helperHourlyRateCents} />
-        </Field>
-      </div>
+        )}
+        <FieldError errors={issues.team} />
+      </FieldSet>
       <Field data-invalid={issues.notes.length > 0}>
         <FieldLabel htmlFor="notes">Notes about the job</FieldLabel>
         <Textarea

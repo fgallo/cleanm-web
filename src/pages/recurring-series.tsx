@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate, formatHours, formatTime } from "@/lib/format.ts";
+import { teamNames } from "@/lib/job-labels.ts";
 import { repeatsLabel } from "@/lib/series-labels.ts";
 
 // The visits that repeat: each series is the rule and the template the API
@@ -54,7 +55,7 @@ export default function RecurringSeriesPage() {
                 <TableHead>Address</TableHead>
                 <TableHead>Repeats</TableHead>
                 <TableHead>Time</TableHead>
-                <TableHead>Helper</TableHead>
+                <TableHead>Who</TableHead>
                 <TableHead>Starts</TableHead>
                 <TableHead>Ends</TableHead>
                 <TableHead>
@@ -85,7 +86,9 @@ export default function RecurringSeriesPage() {
                       {formatTime(Temporal.PlainTime.from(item.startTime))} ·{" "}
                       {formatHours(item.durationMinutes)}
                     </TableCell>
-                    <TableCell>{item.helper?.name ?? <Missing />}</TableCell>
+                    <TableCell>
+                      {teamNames(item).join(", ") || <Missing />}
+                    </TableCell>
                     <TableCell>
                       {formatDate(Temporal.PlainDate.from(item.startDate))}
                     </TableCell>

@@ -109,17 +109,48 @@ export const dan: Helper = {
 
 export const helpers: Helper[] = [carla, dan];
 
-// A helper as a job embeds them: who they are and their usual rate.
-export function onJob(helper: Helper): NonNullable<Job["helper"]> {
+// A helper as a test puts them on a job: at their usual rate, or at one the
+// job has for them.
+type Member = Helper | { helper: Helper; hourlyRateCents: number };
+
+// A job, or a series, done by these helpers, with the owner unless said
+// otherwise, as the API would answer it: how many people that is, how long
+// they are at the house and what each helper is paid for it.
+export function doneBy<
+  Visit extends Pick<
+    Job,
+    "durationMinutes" | "helpers" | "ownerWorks" | "people" | "onSiteMinutes"
+  >,
+>(visit: Visit, members: Member[], { ownerWorks = true } = {}): Visit {
+  const people = Math.max(members.length + (ownerWorks ? 1 : 0), 1);
+  const onSiteMinutes = Math.max(Math.round(visit.durationMinutes / people), 1);
   return {
-    id: helper.id,
-    name: helper.name,
-    hourlyRateCents: helper.hourlyRateCents,
+    ...visit,
+    ownerWorks,
+    people,
+    onSiteMinutes,
+    helpers: members.map((member) => {
+      const { helper, hourlyRateCents } =
+        "helper" in member ? member : { helper: member, hourlyRateCents: null };
+      const rateCents = hourlyRateCents ?? helper.hourlyRateCents;
+      return {
+        helper: {
+          id: helper.id,
+          name: helper.name,
+          hourlyRateCents: helper.hourlyRateCents,
+        },
+        hourlyRateCents,
+        payCents:
+          rateCents === null
+            ? null
+            : Math.round((rateCents * onSiteMinutes) / 60),
+      };
+    }),
   };
 }
 
-// Tuesday morning at Alice's unit: charged by the hour, nobody assigned,
-// not invoiced.
+// Tuesday morning at Alice's unit: charged by the hour, done by the owner
+// alone, not invoiced.
 export const aliceVisit: Job = {
   id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d30",
   scheduledDate: "2026-11-17",
@@ -142,70 +173,82 @@ export const aliceVisit: Job = {
     notes: aliceUnit.notes,
   },
   client: { id: alice.id, name: alice.name },
-  helper: null,
-  helperHourlyRateCents: null,
+  helpers: [],
+  ownerWorks: true,
+  people: 1,
+  onSiteMinutes: 180,
   recurringSeriesId: null,
   invoice: null,
   createdAt: "2026-11-01T14:00:00.000Z",
   updatedAt: "2026-11-01T14:00:00.000Z",
 };
 
-// The same afternoon at Bob's: an agreed price, a helper at her usual rate,
-// already invoiced.
-export const bobVisit: Job = {
-  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d31",
-  scheduledDate: "2026-11-17",
-  startTime: "13:30:00",
-  durationMinutes: 150,
-  serviceType: "move_out",
-  status: "completed",
-  hourlyRateCents: 5000,
-  fixedPriceCents: 20000,
-  priceCents: 20000,
-  notes: "Bring the long ladder.",
-  property: {
-    id: bobCottage.id,
-    addressLine1: bobCottage.addressLine1,
-    addressLine2: bobCottage.addressLine2,
-    city: bobCottage.city,
-    province: bobCottage.province,
-    postalCode: bobCottage.postalCode,
-    country: bobCottage.country,
-    notes: bobCottage.notes,
+// The same afternoon at Bob's: an agreed price, the owner and a helper at
+// her usual rate, so half of the hours at the house, already invoiced.
+export const bobVisit: Job = doneBy(
+  {
+    id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d31",
+    scheduledDate: "2026-11-17",
+    startTime: "13:30:00",
+    durationMinutes: 150,
+    serviceType: "move_out",
+    status: "completed",
+    hourlyRateCents: 5000,
+    fixedPriceCents: 20000,
+    priceCents: 20000,
+    notes: "Bring the long ladder.",
+    property: {
+      id: bobCottage.id,
+      addressLine1: bobCottage.addressLine1,
+      addressLine2: bobCottage.addressLine2,
+      city: bobCottage.city,
+      province: bobCottage.province,
+      postalCode: bobCottage.postalCode,
+      country: bobCottage.country,
+      notes: bobCottage.notes,
+    },
+    client: { id: bob.id, name: bob.name },
+    helpers: [],
+    ownerWorks: true,
+    people: 1,
+    onSiteMinutes: 150,
+    recurringSeriesId: null,
+    invoice: { id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d50", number: 12 },
+    createdAt: "2026-11-02T16:00:00.000Z",
+    updatedAt: "2026-11-17T21:10:00.000Z",
   },
-  client: { id: bob.id, name: bob.name },
-  helper: onJob(carla),
-  helperHourlyRateCents: null,
-  recurringSeriesId: null,
-  invoice: { id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d50", number: 12 },
-  createdAt: "2026-11-02T16:00:00.000Z",
-  updatedAt: "2026-11-17T21:10:00.000Z",
-};
+  [carla],
+);
 
-// Alice's unit every other Tuesday, with Carla at her usual rate, still
-// going on.
-export const aliceBiweekly: RecurringSeries = {
-  id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d60",
-  everyWeeks: 2,
-  dayOfMonth: null,
-  startDate: "2026-11-03",
-  endDate: null,
-  startTime: "09:00:00",
-  durationMinutes: 180,
-  serviceType: "regular",
-  hourlyRateCents: 4500,
-  fixedPriceCents: null,
-  notes: null,
-  property: aliceVisit.property,
-  client: aliceVisit.client,
-  helper: onJob(carla),
-  helperHourlyRateCents: null,
-  createdAt: "2026-11-01T14:00:00.000Z",
-  updatedAt: "2026-11-01T14:00:00.000Z",
-};
+// Alice's unit every other Tuesday, the owner with Carla at her usual rate,
+// still going on.
+export const aliceBiweekly: RecurringSeries = doneBy(
+  {
+    id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d60",
+    everyWeeks: 2,
+    dayOfMonth: null,
+    startDate: "2026-11-03",
+    endDate: null,
+    startTime: "09:00:00",
+    durationMinutes: 180,
+    serviceType: "regular",
+    hourlyRateCents: 4500,
+    fixedPriceCents: null,
+    notes: null,
+    property: aliceVisit.property,
+    client: aliceVisit.client,
+    helpers: [],
+    ownerWorks: true,
+    people: 1,
+    onSiteMinutes: 180,
+    createdAt: "2026-11-01T14:00:00.000Z",
+    updatedAt: "2026-11-01T14:00:00.000Z",
+  },
+  [carla],
+);
 
-// Bob's cottage on the 14th of every month, at an agreed price, nobody
-// assigned. It ended in October.
+// Bob's cottage on the 14th of every month, at an agreed price, done by the
+// owner alone. It ended in October.
 export const bobMonthly: RecurringSeries = {
   id: "0199c4b0-7d2e-7a10-8c3e-3f1c9a2b4d61",
   everyWeeks: null,
@@ -220,8 +263,10 @@ export const bobMonthly: RecurringSeries = {
   notes: "Bring the long ladder.",
   property: bobVisit.property,
   client: bobVisit.client,
-  helper: null,
-  helperHourlyRateCents: null,
+  helpers: [],
+  ownerWorks: true,
+  people: 1,
+  onSiteMinutes: 150,
   createdAt: "2026-05-10T15:00:00.000Z",
   updatedAt: "2026-10-01T15:00:00.000Z",
 };
