@@ -54,6 +54,31 @@ test("marks the jobs that have an invoice", async () => {
   expect(screen.getAllByTitle(/Invoice/)).toEqual([mark]);
 });
 
+test("gives a job the room of its time at the house", async () => {
+  mockApi(
+    routes({
+      "GET /auth/me": () => json(200, session),
+      "GET /jobs": () => json(200, [aliceVisit, bobVisit]),
+    }),
+  );
+  renderApp({ route: "/calendar?date=2026-11-17" });
+
+  await screen.findByText("Bob Sample");
+  // The week is where a job has a height, and says when it is over.
+  fireEvent.click(screen.getByRole("tab", { name: "Week view" }));
+
+  // The time of an event is written before the name of its client, with
+  // thin spaces around the dash: plain ones here.
+  const timeOf = async (client: string) =>
+    (
+      await screen.findByText(client)
+    ).parentElement?.previousElementSibling?.textContent.replace(/\s/g, " ");
+  // The owner alone is there for the 3 hours of cleaning.
+  expect(await timeOf("Alice Example")).toBe("9:00am – 12:00pm");
+  // Two people do Bob's 2.5 hours in 1h15, not until 4:00.
+  expect(await timeOf("Bob Sample")).toBe("1:30 – 2:45pm");
+});
+
 test("keeps the calendar and offers to try again when jobs fail to load", async () => {
   mockApi(
     routes({

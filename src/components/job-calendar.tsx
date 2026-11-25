@@ -111,7 +111,9 @@ function JobEvent({
 }
 
 // A job's date and time have no time zone, and neither do these strings:
-// FullCalendar shows them as written, whatever the browser's zone is.
+// FullCalendar shows them as written, whatever the browser's zone is. A
+// job takes the room of the time at the house, which is shorter than its
+// hours of cleaning when several people do it.
 function toEvent(job: Job): EventInput {
   const start = Temporal.PlainDateTime.from(
     `${job.scheduledDate}T${job.startTime}`,
@@ -120,7 +122,7 @@ function toEvent(job: Job): EventInput {
     id: job.id,
     title: job.client.name,
     start: start.toString(),
-    end: start.add({ minutes: job.durationMinutes }).toString(),
+    end: start.add({ minutes: job.onSiteMinutes }).toString(),
     className: job.status === "cancelled" ? "line-through opacity-60" : "",
   };
 }
