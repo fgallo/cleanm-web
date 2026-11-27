@@ -2,9 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { apiUrl, del, get, patch, post } from "./client.ts";
 import type { DateRange, Job, JobStatus } from "./jobs.ts";
-
-export const paymentMethods = ["e_transfer", "cash"] as const;
-export type PaymentMethod = (typeof paymentMethods)[number];
+import type { Payment } from "./payments.ts";
 
 // The shape GET /invoices/:id returns. An invoice bills one visit and keeps
 // its own copy of what it prints: the pricing, the tax, who it bills and who
@@ -47,13 +45,8 @@ export type Invoice = {
   // Paid in full by payments: the API no longer edits it until its payments
   // change.
   locked: boolean;
-  payments: {
-    id: string;
-    paidOn: string;
-    method: PaymentMethod;
-    amountCents: number;
-    notes: string | null;
-  }[];
+  // In the order they came in.
+  payments: Payment[];
   notes: string | null;
   billTo: {
     name: string;
