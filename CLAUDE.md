@@ -157,6 +157,24 @@ cookie, so every request to the API is sent with credentials. API conventions
   (`subtotalCents`). `updateInvoice` sends only what changed, like
   `updateJob`: the API checks the rules between fields on the invoice as it
   will be. An invoice paid in full gets no form.
+- `src/components/invoice-payments.tsx`: the payments of an invoice, on its
+  page, where they are recorded, corrected and deleted. A payment has no
+  route and no cache of its own, as it has no list in the API: it is part
+  of its invoice, and `src/api/payments.ts` has only the requests that
+  change one. The form (`src/components/payment-form.tsx`, `PaymentDraft`
+  in `src/lib/payment-draft.ts`) opens in place under the list, one at a
+  time, and this part of the page owns its requests as a page does for its
+  form. "Record payment" starts it as the payment there usually is, so that
+  nothing is typed: all that is still due, today in the organization's time
+  zone, by e-transfer. The amount is kept in the form to what the API takes
+  (`maxPaymentCents`): no more than what the invoice still has to receive,
+  on top of what the payment already is. The API answers a payment with the
+  payment alone, and what it changes is derived on the invoice (what was
+  paid, what is due, `paid`, `locked`), so the invoice is asked for again
+  after each request (`useInvoiceAgain`) and the form stays until the page
+  shows the answer. `updatePayment` sends only what changed, like
+  `updateJob`. Deleting asks twice. Lowering or deleting a payment is how an
+  invoice paid in full is opened again, and the list says so.
 - `src/pages/invoices.tsx` (`/invoices?month=YYYY-MM`): the invoices issued
   in one month, the latest first, where "Invoices" on the menu leads; each
   number leads to its invoice. The month is in the address, so the arrows
@@ -167,9 +185,9 @@ cookie, so every request to the API is sent with credentials. API conventions
   whether it is paid (`src/components/invoice-paid-badge.tsx`, shared with
   the invoice page), and the footer adds up the month. No invoice is
   generated there: it is the invoice of a job, generated on the page of its
-  day. The pages that generate, change or delete an invoice ask for these
-  lists again (`invoiceKeys.ranges()`), not for the invoice that was
-  deleted, which its page still reads.
+  day. The pages that generate, change or delete an invoice, and what
+  changes its payments, ask for these lists again (`invoiceKeys.ranges()`),
+  not for the invoice that was deleted, which its page still reads.
 - `src/lib/`: what pages share that is not a component. `format.ts` is how
   money, hours, a length of time, percentages, days and times read on screen
   (`en-CA` and CAD, like the API's invoice PDF, until the organization has a
