@@ -1,5 +1,6 @@
-import type { Invoice, PaymentMethod } from "@/api/invoices.ts";
+import type { Invoice } from "@/api/invoices.ts";
 import type { ServiceType } from "@/api/jobs.ts";
+import type { PaymentMethod } from "@/api/payments.ts";
 import { formatPercent } from "@/lib/format.ts";
 
 // How the API's values read on screen. The lines of an invoice are named as
