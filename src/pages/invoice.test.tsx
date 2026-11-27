@@ -100,11 +100,13 @@ test("shows an invoice from the day of its visit, as its PDF prints it", async (
   // No discount, no line for one.
   expect(screen.queryByText(/Discount/)).toBeNull();
 
+  // What came in so far, each payment with the way to its form.
   expect(rowOf("E-transfer")).toEqual([
     "Nov 18, 2026",
     "E-transfer",
     "First half.",
     "$113.00",
+    "Edit",
   ]);
   expect(screen.getByText("Thank you for your business.")).toBeDefined();
 
@@ -197,7 +199,13 @@ test("shows an invoice by the hour with a percentage off, paid in full", async (
   expect(amountOf("Amount due")).toBe("$0.00");
   // No tax, no line for it.
   expect(screen.queryByText(/Tax|HST/)).toBeNull();
-  expect(rowOf("Cash")).toEqual(["Nov 20, 2026", "Cash", "—", "$112.50"]);
+  expect(rowOf("Cash")).toEqual([
+    "Nov 20, 2026",
+    "Cash",
+    "—",
+    "$112.50",
+    "Edit",
+  ]);
   expect(screen.queryByRole("heading", { name: "Notes" })).toBeNull();
 
   // Closed: nothing that changes it is offered, and the page says why.

@@ -17,6 +17,7 @@ import {
 import { jobKeys } from "@/api/jobs.ts";
 import AskTwice from "@/components/ask-twice.tsx";
 import InvoicePaidBadge from "@/components/invoice-paid-badge.tsx";
+import InvoicePayments from "@/components/invoice-payments.tsx";
 import RequestFailed from "@/components/request-failed.tsx";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -29,11 +30,7 @@ import {
 } from "@/components/ui/table";
 import { cityLine } from "@/lib/address.ts";
 import { formatDate, formatHours, formatMoney } from "@/lib/format.ts";
-import {
-  discountLabel,
-  paymentMethodLabels,
-  taxLabel,
-} from "@/lib/invoice-labels.ts";
+import { discountLabel, taxLabel } from "@/lib/invoice-labels.ts";
 
 export default function InvoicePage() {
   const { invoiceId } = useParams();
@@ -216,39 +213,7 @@ function InvoiceView({ invoice }: { invoice: Invoice }) {
         </Amount>
       </dl>
 
-      <section className="mt-8">
-        <h2 className="font-heading text-base font-medium">Payments</h2>
-        {invoice.payments.length === 0 ? (
-          <p className="mt-1 text-sm text-muted-foreground">No payments yet.</p>
-        ) : (
-          <Table className="mt-1">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Paid on</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Notes</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoice.payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>{day(payment.paidOn)}</TableCell>
-                  <TableCell>{paymentMethodLabels[payment.method]}</TableCell>
-                  <TableCell>
-                    {payment.notes ?? (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatMoney(payment.amountCents)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </section>
+      <InvoicePayments invoice={invoice} />
 
       {invoice.notes !== null && (
         <section className="mt-8">
